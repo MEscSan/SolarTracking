@@ -1,5 +1,6 @@
 // Main programm for 2-axis Arduino
 #include "Stepper.h"            //  Stepper Motors
+#include "SolarCalculator.h"    //  Static class for getting the position of the sun
 #include <LiquidCrystal_I2C.h>  //  LCD-Headers
 #include <SoftwareSerial.h>     //  Serielle Kommunikation über digitale Pins 
 #include "DEV_Config.h"         //  GPS-Headers (I)
@@ -43,12 +44,15 @@ ISR_Flags flags;
 
 //****Object Instances****
 LiquidCrystal_I2C lcd(0x27, 16, 2); //Instantiate and initialize LCD-Display, set the I2C Address to 0x27 for the LCD (16 chars and 2 line Display)
+RTC_DS1307 rtc;
 Stepper xStepper(xStepperPins, GEAR_RATIO_X, 0, STEPPER_TYPE, CLICKS_PER_STEP, STEPS_PER_REVOLUTION_28BYJ);
 Stepper yStepper(yStepperPins, GEAR_RATIO_Y, 1, STEPPER_TYPE, CLICKS_PER_STEP, STEPS_PER_REVOLUTION_28BYJ);
 
 //****Volatile variables (shared by interrupt and normal code)****
 volatile Stepper steppers[NUM_STEPPERS] = {xStepper, yStepper};
 
+#pragma region Functions
+#pragma region ICR-Functions
 // Prepare next Interrupt-interval: 
 //  1.  Set inteval till next interrupt (OCR-Parameter) => motor speed 
 //  2.  Decide what motor is next (according to remaining Steppers Flag):
@@ -91,7 +95,8 @@ void runAndWait() {
     while (flags.remainingSteppersFlag) {
         ledState = !ledState;
         digitalWrite(LED_PIN, ledState);
-        delay(500);
+        //delay(500);
+        showTime();
     }
 
     flags.remainingSteppersFlag = 0;
@@ -146,7 +151,38 @@ ISR(TIMER1_COMPA_vect) {
 
     TCNT1 = 0;
 }
+#pragma endregion
 
+#pragma region Display-Functions
+void showTime(){
+   //lcd.clear();
+   DateTime now = rtc.now();
+   lcd.setCursor(0,0);
+   lcd.print(now.day(), DEC);
+   lcd.print("/");
+   lcd.print(now.month(), DEC); 
+   lcd.print("/");
+   lcd.print(now.year(), DEC);
+   lcd.print(" ");
+   lcd.print(now.hour(), DEC);
+   lcd.print(":");
+   lcd.print(now.minute(), DEC);
+   lcd.print("  ");
+   delay(2000);
+}
+
+void showSolarPosition(SolarPosition s){
+   //lcd.clear();
+   lcd.setCursor(0,1);
+   lcd.print("A");
+   lcd.print(s.Azimuth); 
+   lcd.print(" ");
+   lcd.print("Z");
+   lcd.print(s.Zenith); 
+   lcd.print(" ");
+}
+#pragma endregion
+#pragma endregion
 void setup() {
 
     // Set Timer1
@@ -169,27 +205,34 @@ void setup() {
     // Set serial monitor
     Serial.begin(9600);
 
-    // Set LCD-Display
-    /*lcd.init();       // initialize lcd
+    // Set LCD-Display 
+    lcd.init();       // initialize lcd
     lcd.backlight();  // turn on backlight// Set LCD-Display
     lcd.init();       // initialize lcd
     lcd.backlight();  // turn on backlight
     lcd.setCursor(0, 0);
-    lcd.print("Motor X:");
-    lcd.setCursor(0, 1);
-    lcd.print("Motor Y:");*/
+
+    // Set RTC-Clock
+    rtc.begin();
 
     // Set LED-Pin
     pinMode(LED_PIN, OUTPUT);
 }
 
 void loop() {
+     
+  DateTime now = rtc.now();
+  GeographicalCoordinate g;
+  g.Latitude = 0;//52.51;
+  g.Longitude = 0;//13.41;
+  SolarPosition s =  SolarCalculator::getSolarPosition(now, g);
+  showSolarPosition(s);
+  
+  steppers[0].prepareMovement(-35, &flags);
+  runAndWait();
 
-    steppers[0].prepareMovement(-35, &flags);
-    runAndWait();
-    
-    steppers[1].prepareMovement(-35, &flags);
-    runAndWait();
-    
-    //while(true);
+  steppers[1].prepareMovement(-35, &flags);
+  runAndWait();
+  
+   //while(true);
 }

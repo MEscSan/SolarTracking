@@ -1,7 +1,7 @@
 // Class for stepper-motor control using interrupt routine
 // The class assumes the existence of an Interrupt-Routine which has to be defined in the main-program
-
 // Code based on library by http://www.iforce2d.net/sketches/
+
 #ifndef _STEPPER_H_
 #define _STEPPER_H_
 
@@ -64,13 +64,11 @@ class Stepper {
         void oneStep();
         void resetStepperInfo();
         void resetStepperMovement();
-        void lcdPrintMotorAngle();
         void prepareMovement(int angleRequested, ISR_Flags *flags);
 
         // Getter- and Setter
         volatile bool getMovementDone();
         volatile int getDirection();
-        volatile int getPin(int idx);
         volatile unsigned int getStepCountInMovement();
         volatile unsigned int getTotalStepsRequested();
         volatile unsigned long getClicksPerStep();
