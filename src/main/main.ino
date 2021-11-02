@@ -1,19 +1,195 @@
 // Main programm for 2-axis Arduino
-
-#include "Stepper.h"
+#include "Stepper.h"            //  Stepper Motors
 #include <LiquidCrystal_I2C.h>  //  LCD-Headers
 #include <SoftwareSerial.h>     //  Serielle Kommunikation über digitale Pins 
-#include "DEV_Config.h"         //  GPS-Headers
-#include "L76X.h"             
-#include "RTClib.h"             // RTC-Clock
+#include "DEV_Config.h"         //  GPS-Headers (I)
+#include "L76X.h"               //  GPS-Headers (II)
+#include "RTClib.h"             //  RTC-Clock
 
+// Nema17 X-Direction
+#define DIR_X_PIN 5 
+#define STEP_X_PIN 2
+
+// Nema 17 Y-Direction
+#define DIR_Y_PIN 6
+#define STEP_Y_PIN 3
+
+#define LED_PIN 13
+
+#define CLICKS_PER_STEP 1500
+#define GEAR_RATIO 1 // Input speed / Output speed : Ratio > 1 => gear slows movement down 
+#define GEAR_RATIO_X 1 
+#define GEAR_RATIO_Y 1 
+#define NUM_STEPPERS 2
+#define STEPS_PER_REVOLUTION_NEMA17 200
+#define STEPS_PER_REVOLUTION_28BYJ 2048
+#define STEPPER_TYPE StepperType::BYJ28 
+
+#define TIMER1_OCR 550
+#define TIMER1_INTERRUPTS_ON    TIMSK1 |=  (1 << OCIE1A)
+#define TIMER1_INTERRUPTS_OFF   TIMSK1 &= ~(1 << OCIE1A)
+
+//****Global variables****
+/*/For Nema17
+int xStepperPins[2] = { DIR_X_PIN, STEP_X_PIN };
+int yStepperPins[2] = { DIR_Y_PIN, STEP_Y_PIN };
+*/
+//For 28BYJ:
+int xStepperPins[4] = { 11, 10, 9, 8 }; // Motor X: 11...8  
+int yStepperPins[4] = {  7,  6, 5, 4 }; // Motor Y: 7...4
+bool  ledState = true;  //LED-status variable
+//****Struct Instances****
+ISR_Flags flags;
+
+//****Object Instances****
+LiquidCrystal_I2C lcd(0x27, 16, 2); //Instantiate and initialize LCD-Display, set the I2C Address to 0x27 for the LCD (16 chars and 2 line Display)
+Stepper xStepper(xStepperPins, GEAR_RATIO_X, 0, STEPPER_TYPE, CLICKS_PER_STEP, STEPS_PER_REVOLUTION_28BYJ);
+Stepper yStepper(yStepperPins, GEAR_RATIO_Y, 1, STEPPER_TYPE, CLICKS_PER_STEP, STEPS_PER_REVOLUTION_28BYJ);
+
+//****Volatile variables (shared by interrupt and normal code)****
+volatile Stepper steppers[NUM_STEPPERS] = {xStepper, yStepper};
+
+// Prepare next Interrupt-interval: 
+//  1.  Set inteval till next interrupt (OCR-Parameter) => motor speed 
+//  2.  Decide what motor is next (according to remaining Steppers Flag):
+//  Example: remainingSteppersFlag: 00110011(Motors 0,1,4,5 remaining; all motors have the same speed)
+//                       &  1 << 0: 00000001 => true  => nextStepperFlag: 00000001  (Stepper 0)
+//                       &  1 << 2: 00000100 => false 
+void setNextInterruptInterval() {
+    bool movementComplete = true;
+    unsigned long minSpeed = 999999;
+    flags.nextStepperFlag = 0;
+
+    //Decide what motor has to make the next step(the slowest one_)
+    for (int i = 0; i < NUM_STEPPERS; i++) {
+        if (((1 << i) & flags.remainingSteppersFlag) && steppers[i].getClicksPerStep() < minSpeed) {
+            minSpeed = steppers[i].getClicksPerStep();
+        }
+    }
+
+    for (int i = 0; i < NUM_STEPPERS; i++) {
+        if (!steppers[i].getMovementDone())
+            movementComplete = false;
+        if (((1 << i) & flags.remainingSteppersFlag) && steppers[i].getClicksPerStep() == minSpeed)
+            flags.nextStepperFlag |= (1 << i);
+    }
+
+    // If all movements complete, reset timer-interval to the maximum (65500 
+    if (flags.remainingSteppersFlag == 0) {
+        TIMER1_INTERRUPTS_OFF;
+        OCR1A = 65500; //
+    }
+
+    OCR1A = minSpeed;
+}
+
+// Run the planed movements (concurrently to the rest of the loop)
+void runAndWait() {
+    setNextInterruptInterval();
+    TIMER1_INTERRUPTS_ON;
+
+    while (flags.remainingSteppersFlag) {
+        ledState = !ledState;
+        digitalWrite(LED_PIN, ledState);
+        delay(500);
+    }
+
+    flags.remainingSteppersFlag = 0;
+    flags.nextStepperFlag = 0;
+}
+
+//****Interrupt routine Timer 1****
+ISR(TIMER1_COMPA_vect) {
+    unsigned int tmpCtr = OCR1A;
+
+    OCR1A = 65500;
+    for (int i = 0; i < NUM_STEPPERS; i++) {
+
+        // Jump the for-loop for all motors that are not remaining
+        // 00001111 & 01000000 => 00000000 => !0 == 1 => true
+        if (!((1 << i) & flags.remainingSteppersFlag))
+            continue;
+
+        // Jump the for-loop for all motors that are not the one in the nextStepperFlag
+        // 00000010 & 00000010 => 00000010 => !2 = 0 => false
+        // 00000010 & 00000100 => 00000000 => !0 = 1 => true
+        if (!(flags.nextStepperFlag & (1 << i))) {
+            continue;
+        }
+
+        // Get remaining motor
+        //Serial.println(i);
+        volatile Stepper& s = steppers[i];
+        volatile unsigned int stepsRequested = s.getTotalStepsRequested();
+        
+        // Run one step in the motor
+        if (s.getStepCountInMovement() < stepsRequested) {
+            s.oneStep();
+            // Update step-counter for current movement
+            unsigned int newStepCount = s.getStepCountInMovement();
+            newStepCount++;
+            s.setStepCountInMovement(newStepCount);
+
+            // Update total step-counter
+            long newStepPosition = s.getStepPosition();
+            newStepPosition += s.getDirection() == 0 ? 1 : -1;
+            s.setStepPosition(newStepPosition);
+
+            if (s.getStepCountInMovement() >= stepsRequested) {
+                s.setMovementDone(true);
+                flags.remainingSteppersFlag &= ~(1 << i);
+            }
+        }
+    }
+
+    setNextInterruptInterval();
+
+    TCNT1 = 0;
+}
 
 void setup() {
-  // put your setup code here, to run once:
 
+    // Set Timer1
+    noInterrupts();
+    //1. Reset Timer/Counter Control Register A and B (TCCR1A, TCCR1B)
+    TCCR1A = 0;
+    TCCR1B = 0;
+    //2. Reset Timer/Counter Register
+    TCNT1 = 0;
+    //3. Set PWM-Mode to CTC
+    TCCR1B |= (1 << WGM12);
+    //4. Set prescaler value in Clock-Select bits of TCCR1B-Register (CS12, CS11, CS10)
+    TCCR1B |= B00000011;    //Prescaler 64
+    //5. Set timer Mode in Timer Interrupt Mask Register 1 (TIMSK1)
+    TIMSK1 |= (1 << OCIE1A);
+    //6. Set number of Timer pulses till interrupt
+    OCR1A = TIMER1_OCR;
+    interrupts();
+
+    // Set serial monitor
+    Serial.begin(9600);
+
+    // Set LCD-Display
+    /*lcd.init();       // initialize lcd
+    lcd.backlight();  // turn on backlight// Set LCD-Display
+    lcd.init();       // initialize lcd
+    lcd.backlight();  // turn on backlight
+    lcd.setCursor(0, 0);
+    lcd.print("Motor X:");
+    lcd.setCursor(0, 1);
+    lcd.print("Motor Y:");*/
+
+    // Set LED-Pin
+    pinMode(LED_PIN, OUTPUT);
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
 
+    steppers[0].prepareMovement(-35, &flags);
+    runAndWait();
+    
+    steppers[1].prepareMovement(-35, &flags);
+    runAndWait();
+    
+    //while(true);
 }

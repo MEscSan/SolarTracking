@@ -3,14 +3,13 @@
 
 
 //****Constructor****
-Stepper::Stepper(volatile int stepperPins[], volatile LiquidCrystal_I2C lcd,  float gearRatio = 1, unsigned int id,StepperType t=StepperType::NEMA17, unsigned long clicksPerStep=CLICKS_PER_STEP, unsigned int stepsPerRevolution=STEPS_PER_REVOLUTION_NEMA17){
+Stepper::Stepper(volatile int stepperPins[], float gearRatio = 1, unsigned int id = 0,StepperType t=StepperType::NEMA17, unsigned long clicksPerStep=CLICKS_PER_STEP, unsigned int stepsPerRevolution=STEPS_PER_REVOLUTION_NEMA17)
+{
     _type = t;
-    _stepperPins = stepperPins;
     _clicksPerStep = clicksPerStep;
     _stepsPerRevolution = stepsPerRevolution;
     _gearRatio = gearRatio;
     _motorId = id;
-    _lcd = lcd;
 
     // Initialize Stepper-Pins:
     int numPins = 0;
@@ -22,7 +21,10 @@ Stepper::Stepper(volatile int stepperPins[], volatile LiquidCrystal_I2C lcd,  fl
         default:
             numPins = 2;
         break;
-    }
+    } 
+    
+    // memcpy(destination, source, size in bytes)
+    memmove(_stepperPins, stepperPins, numPins*sizeof(volatile int));
 
     for (int i = 0; i < numPins; i++) {
         pinMode(_stepperPins[i], OUTPUT);
@@ -89,13 +91,12 @@ void Stepper::resetStepperMovement() {
 }
 
 // Prepare the next motor-movement of the selected motor (reset info from previous movement, set new requested number of steps)
-void Stepper::prepareMovement(int angleRequested, ISRFlags flags) {
-    long stepsRequested = Stepper::angle2Steps(angleRequested);
-
+void Stepper::prepareMovement(int angleRequested, ISR_Flags *flags) {
+    long stepsRequested = angle2Steps(angleRequested);
     _dir = stepsRequested > 0 ? 0 : 1;
     _totalStepsRequested = abs(stepsRequested);
     resetStepperMovement();
-    flags.remainingSteppersFlag |= (1 << _motorId); // "Add" motor to byte-flag
+    flags->remainingSteppersFlag |= (1 << _motorId); // "Add" motor to byte-flag
 }
 
 // Convert from degree to motor-steps
@@ -136,89 +137,38 @@ int Stepper::steps2Angle(long motorSteps) {
     return motorAngle;
 }
 
-// Show current motor Position on lcd-Screen
-void Stepper::lcdPrintMotorAngle() {
-
-    int motorAngle = Stepper::steps2Angle(whichMotor, steppers[whichMotor].stepPosition);
-    int motorAngleDisplay = motorAngle - (motorAngle / 360) * 360; // Check that angle isn't bigger than 360�
-
-    _lcd.setCursor(10, whichMotor); // set the cursor to column 8, line 0 or 1 depending on the motor
-    _lcd.print(" ");
-    _lcd.print(motorAngleDisplay);
-    //lcd.setCursor(15,whichMotor);
-    _lcd.print((char)223);
-    _lcd.print("    ");
+volatile unsigned long Stepper::getClicksPerStep(){
+  return _clicksPerStep;
 }
 
-// Prepare next Interrupt-interval: 
-//  1.  Set inteval till next interrupt (OCR-Parameter) => motor speed 
-//  2.  Decide what motor is next (according to remaining Steppers Flag):
-//  Example: remainingSteppersFlag: 00110011(Motors 0,1,4,5 remaining; all motors have the same speed)
-//                       &  1 << 0: 00000001 => true  => nextStepperFlag: 00000001  (Stepper 0)
-//                       &  1 << 2: 00000100 => false 
-void setNextInterruptInterval() {
-    bool movementComplete = true;
-    unsigned long minSpeed = 999999;
-    nextStepperFlag = 0;
-
-    //Decide what motor has to make the next step(the slowest one)
-    for (int i = 0; i < NUM_STEPPERS; i++) {
-        if (((1 << i) & remainingSteppersFlag) && steppers[i].clicksPerStep < minSpeed) {
-            minSpeed = steppers[i].clicksPerStep;
-        }
-    }
-
-    for (int i = 0; i < NUM_STEPPERS; i++) {
-        if (!steppers[i].movementDone)
-            movementComplete = false;
-        if (((1 << i) & remainingSteppersFlag) && steppers[i].clicksPerStep == minSpeed)
-            nextStepperFlag |= (1 << i);
-    }
-
-    // If all movements complete, reset timer-interval to the maximum (65500 
-    if (remainingSteppersFlag == 0) {
-        TIMER1_INTERRUPTS_OFF;
-        OCR1A = 65500; //
-    }
-
-    OCR1A = minSpeed;
+volatile bool Stepper::getMovementDone(){
+  return _movementDone;  
 }
 
-//****Interrupt routine Timer 1****
-ISR(TIMER1_COMPA_vect) {
-    unsigned int tmpCtr = OCR1A;
+volatile int Stepper::getDirection(){
+    return _dir;
+}
 
-    OCR1A = 65500;
+volatile unsigned int Stepper::getStepCountInMovement() {
+    return _stepCountInMovement;
+}
 
-    for (int i = 0; i < NUM_STEPPERS; i++) {
+volatile unsigned int Stepper::getTotalStepsRequested() {
+    return _totalStepsRequested;
+}
 
-        // Jump the for-loop for all motors that are not remaining
-        // 00001111 & 01000000 => 00000000 => !0 == 1 => true
-        if (!((1 << i) & remainingSteppersFlag))
-            continue;
+long Stepper::getStepPosition() {
+    return _stepPosition;
+}
 
-        // Jump the for-loop for all motors that are not the one in the nextStepperFlag
-        // 00000010 & 00000010 => 00000010 => !2 = 0 => false
-        // 00000010 & 00000100 => 00000000 => !0 = 1 => true
-        if (!(nextStepperFlag & (1 << i))) {
-            continue;
-        }
-        // Get remaining motor
-        volatile StepperInfo& s = steppers[i];
+void Stepper::setMovementDone(volatile bool value){
+  _movementDone = value;
+}
 
-        // Run one step in the motor
-        if (s.stepCountInMovement < s.totalStepsRequested) {
-            oneStep(s.t, s.dir, s.stepperPins);
-            s.stepCountInMovement++;
-            s.stepPosition += s.dir == 0 ? 1 : -1;
-            if (s.stepCountInMovement >= s.totalStepsRequested) {
-                s.movementDone = true;
-                remainingSteppersFlag &= ~(1 << i);
-            }
-        }
-    }
+void Stepper::setStepCountInMovement(volatile unsigned int value){
+  _stepCountInMovement = value;  
+}
 
-    setNextInterruptInterval();
-
-    TCNT1 = 0;
+void Stepper::setStepPosition(long value) {
+    _stepPosition = value;
 }

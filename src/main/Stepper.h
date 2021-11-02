@@ -7,17 +7,13 @@
 
 #pragma once
 #include "Arduino.h"
+//#include <iostream>
 #include <stdlib.h>
 #include <LiquidCrystal_I2C.h>
 
-#define NUM_STEPPERS 2
 #define CLICKS_PER_STEP 600
 #define STEPS_PER_REVOLUTION_NEMA17 200
 #define STEPS_PER_REVOLUTION_28BYJ 2048
-
-#define TIMER1_OCR 550
-#define TIMER1_INTERRUPTS_ON    TIMSK1 |=  (1 << OCIE1A)
-#define TIMER1_INTERRUPTS_OFF   TIMSK1 &= ~(1 << OCIE1A)
 
 #pragma region Enums
 enum StepperType {
@@ -38,7 +34,7 @@ enum StepperType {
 /// Instead of ++ Operator, the number of remaining motors is tracked by bit-shifting
 /// Note: the flag allows a maximum of 8 motors
 /// </summary>
-typedef struct ISRFlags {
+typedef struct ISR_Flags {
     volatile byte remainingSteppersFlag = 0;
     volatile byte nextStepperFlag = 0;
     volatile int remainingSteppers = 0;
@@ -62,26 +58,35 @@ class Stepper {
         /// <param name="t"></param>
         /// <param name="clicksPerStep"></param>
         /// <param name="stepsPerRevolution"></param>
-        Stepper(volatile int stepperPins[],volatile LiquidCrystal_I2C lcd, float gearRatio, unsigned int id, StepperType t,  unsigned long clicksPerStep, unsigned int stepsPerRevolution);
+        Stepper(volatile int stepperPins[], float gearRatio, unsigned int id, StepperType t,  unsigned long clicksPerStep, unsigned int stepsPerRevolution);
             
         // Public Methods
         void oneStep();
         void resetStepperInfo();
         void resetStepperMovement();
         void lcdPrintMotorAngle();
-        void prepareMovement(int angleRequested, ISRFlags flags);
+        void prepareMovement(int angleRequested, ISR_Flags *flags);
 
-        // Timer Method, will come into main
-        void setNextInterruptInterval();
+        // Getter- and Setter
+        volatile bool getMovementDone();
+        volatile int getDirection();
+        volatile int getPin(int idx);
+        volatile unsigned int getStepCountInMovement();
+        volatile unsigned int getTotalStepsRequested();
+        volatile unsigned long getClicksPerStep();
+        long getStepPosition();
         
-
+      
+        void setMovementDone(volatile bool value);
+        void setStepCountInMovement(volatile unsigned int value);
+        void setStepPosition(long value);
+        
     private:
-        //Variables
+        //Attributes
         volatile StepperType _type;                  // Motor type, either eihter NEMA17 or 28BYJ
         volatile unsigned long _clicksPerStep;       // timer clicks between two steps, smaller is faster  
         volatile unsigned int _stepsPerRevolution;
         volatile float _gearRatio;                   // Input speed / Output speed : Ratio > 1 => gear slows movement down 
-        volatile LiquidCrystal_I2C _lcd;             // LCD-Display to which the motor delivers 
         volatile unsigned int _motorId;               // Motor Id for using several motors
             // derived parameters (automatically updated)
             // per movement variables (only changed once per movement)
@@ -93,16 +98,16 @@ class Stepper {
             // per iteration variables (potentially changed every interrupt)
         volatile unsigned int _stepCountInMovement;  // number of steps completed in current movement
 
-            // Motor set-up (Member of variable length)
-        volatile int _stepperPins[];                  // Int-Array with the Pins of the stepper: 
-                                                      //      NEMA17  :   {dir, step}
-                                                      //      28BYJ   :   {pin1, pin2, pin3, pin4}    
-        
         //Private methods
         void step28BYJ();
         void stepNema17();
-        static int angle2Steps(int motorAngle);
-        static int steps2Angle(long motorSteps);
+        int angle2Steps(int motorAngle);
+        int steps2Angle(long motorSteps);
+
+        // Motor set-up (Member of variable length)
+        volatile int _stepperPins[4];                  // Int-Array with the Pins of the stepper: 
+                                                      //      NEMA17  :   {dir, step}
+                                                      //      28BYJ   :   {pin1, pin2, pin3, pin4}    
 };
 
 #pragma region Obsolete procedural Structure
