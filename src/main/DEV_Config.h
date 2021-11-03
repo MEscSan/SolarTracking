@@ -1,6 +1,8 @@
 #ifndef _DEV_CONFIG_H_
 #define _DEV_CONFIG_H_
 
+#pragma once
+
 #include <SoftwareSerial.h>
 #include <avr/pgmspace.h>
 #include <stdint.h>

@@ -1,6 +1,8 @@
 #ifndef _SOLARCALCULATOR_H_
 #define _SOLARCALCULATOR_H_
 
+#pragma once
+
 #include <math.h>
 #include "Arduino.h"
 #include "RTClib.h" 
@@ -11,7 +13,7 @@
 // Equations from: http://geoastro.de/SME/tk/index.htm
 
 //****Structs****
-typedef struct Date {
+/*typedef struct Date {
 	int Year;
 	int Month;
 	int Day;
@@ -21,7 +23,7 @@ typedef struct Date {
 typedef struct Time {
 	int Hour;
 	int Minute;
-};
+};*/
 
 typedef struct AstronomicalCoordinate {
 	double EqTime;

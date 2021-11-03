@@ -7,9 +7,6 @@
 
 #pragma once
 #include "Arduino.h"
-//#include <iostream>
-#include <stdlib.h>
-#include <LiquidCrystal_I2C.h>
 
 #define CLICKS_PER_STEP 600
 #define STEPS_PER_REVOLUTION_NEMA17 200

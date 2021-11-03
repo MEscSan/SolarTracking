@@ -6,17 +6,15 @@
 #include "DEV_Config.h"         //  GPS-Headers (I)
 #include "L76X.h"               //  GPS-Headers (II)
 #include "RTClib.h"             //  RTC-Clock
+#include "ICR_Functions.h"      //  Complementary function-set for Timer Interrupts
+#include "Display_Functions.h"  //  Complementary function-set for 
 
-// Nema17 X-Direction
-#define DIR_X_PIN 5 
-#define STEP_X_PIN 2
 
-// Nema 17 Y-Direction
-#define DIR_Y_PIN 6
-#define STEP_Y_PIN 3
-
+#define DIR_X_PIN 5     // Nema17 X-Direction
+#define STEP_X_PIN 2    // Nema17 X-Step
+#define DIR_Y_PIN 6     // Nema 17 Y-Direction
+#define STEP_Y_PIN 3    // Nema 17 Y-Step
 #define LED_PIN 13
-
 #define CLICKS_PER_STEP 1500
 #define GEAR_RATIO 1 // Input speed / Output speed : Ratio > 1 => gear slows movement down 
 #define GEAR_RATIO_X 1 
@@ -25,10 +23,8 @@
 #define STEPS_PER_REVOLUTION_NEMA17 200
 #define STEPS_PER_REVOLUTION_28BYJ 2048
 #define STEPPER_TYPE StepperType::BYJ28 
-
 #define TIMER1_OCR 550
-#define TIMER1_INTERRUPTS_ON    TIMSK1 |=  (1 << OCIE1A)
-#define TIMER1_INTERRUPTS_OFF   TIMSK1 &= ~(1 << OCIE1A)
+
 
 //****Global variables****
 /*/For Nema17
@@ -51,52 +47,19 @@ Stepper yStepper(yStepperPins, GEAR_RATIO_Y, 1, STEPPER_TYPE, CLICKS_PER_STEP, S
 //****Volatile variables (shared by interrupt and normal code)****
 volatile Stepper steppers[NUM_STEPPERS] = {xStepper, yStepper};
 
-#pragma region Functions
-#pragma region ICR-Functions
-// Prepare next Interrupt-interval: 
-//  1.  Set inteval till next interrupt (OCR-Parameter) => motor speed 
-//  2.  Decide what motor is next (according to remaining Steppers Flag):
-//  Example: remainingSteppersFlag: 00110011(Motors 0,1,4,5 remaining; all motors have the same speed)
-//                       &  1 << 0: 00000001 => true  => nextStepperFlag: 00000001  (Stepper 0)
-//                       &  1 << 2: 00000100 => false 
-void setNextInterruptInterval() {
-    bool movementComplete = true;
-    unsigned long minSpeed = 999999;
-    flags.nextStepperFlag = 0;
 
-    //Decide what motor has to make the next step(the slowest one_)
-    for (int i = 0; i < NUM_STEPPERS; i++) {
-        if (((1 << i) & flags.remainingSteppersFlag) && steppers[i].getClicksPerStep() < minSpeed) {
-            minSpeed = steppers[i].getClicksPerStep();
-        }
-    }
+#pragma region ICR
 
-    for (int i = 0; i < NUM_STEPPERS; i++) {
-        if (!steppers[i].getMovementDone())
-            movementComplete = false;
-        if (((1 << i) & flags.remainingSteppersFlag) && steppers[i].getClicksPerStep() == minSpeed)
-            flags.nextStepperFlag |= (1 << i);
-    }
-
-    // If all movements complete, reset timer-interval to the maximum (65500 
-    if (flags.remainingSteppersFlag == 0) {
-        TIMER1_INTERRUPTS_OFF;
-        OCR1A = 65500; //
-    }
-
-    OCR1A = minSpeed;
-}
-
-// Run the planed movements (concurrently to the rest of the loop)
+// Run the timer routine concurrently to the rest of the tasks included in the function
 void runAndWait() {
-    setNextInterruptInterval();
-    TIMER1_INTERRUPTS_ON;
+    timer1CompA_setNextInterruptInterval(&flags, steppers, NUM_STEPPERS);
+    timer1CompA_On();
 
     while (flags.remainingSteppersFlag) {
         ledState = !ledState;
         digitalWrite(LED_PIN, ledState);
         //delay(500);
-        showTime();
+        lcdPrintTime(lcd, rtc);
     }
 
     flags.remainingSteppersFlag = 0;
@@ -147,40 +110,14 @@ ISR(TIMER1_COMPA_vect) {
         }
     }
 
-    setNextInterruptInterval();
+    timer1CompA_setNextInterruptInterval(&flags, steppers, NUM_STEPPERS);
 
     TCNT1 = 0;
 }
 #pragma endregion
 
 #pragma region Display-Functions
-void showTime(){
-   //lcd.clear();
-   DateTime now = rtc.now();
-   lcd.setCursor(0,0);
-   lcd.print(now.day(), DEC);
-   lcd.print("/");
-   lcd.print(now.month(), DEC); 
-   lcd.print("/");
-   lcd.print(now.year(), DEC);
-   lcd.print(" ");
-   lcd.print(now.hour(), DEC);
-   lcd.print(":");
-   lcd.print(now.minute(), DEC);
-   lcd.print("  ");
-   delay(2000);
-}
 
-void showSolarPosition(SolarPosition s){
-   //lcd.clear();
-   lcd.setCursor(0,1);
-   lcd.print("A");
-   lcd.print(s.Azimuth); 
-   lcd.print(" ");
-   lcd.print("Z");
-   lcd.print(s.Zenith); 
-   lcd.print(" ");
-}
 #pragma endregion
 #pragma endregion
 void setup() {
@@ -226,7 +163,7 @@ void loop() {
   g.Latitude = 0;//52.51;
   g.Longitude = 0;//13.41;
   SolarPosition s =  SolarCalculator::getSolarPosition(now, g);
-  showSolarPosition(s);
+  lcdPrintSolarPosition(lcd,s);
   
   steppers[0].prepareMovement(-35, &flags);
   runAndWait();

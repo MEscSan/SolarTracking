@@ -1,11 +1,11 @@
 #ifndef _L76X_H_
 #define _L76X_H_
 
+#pragma once
+
 #include "DEV_Config.h"
 #include <math.h>
 #include <stdlib.h>
-
-
 
 #define BUFFSIZE 800
 
