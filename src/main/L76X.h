@@ -74,6 +74,7 @@ typedef struct {
     double Lat;
 }Coordinates;
 
+void L76X_Init_9600();
 void L76X_Send_Command(char *data);
 Coordinates L76X_Baidu_Coordinates(void);
 Coordinates L76X_Google_Coordinates(void);

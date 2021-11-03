@@ -14,7 +14,7 @@ void lcdPrintTime(LiquidCrystal_I2C lcd, RTC_DS1307 rtc){
 	lcd.print(":");
 	lcd.print(now.minute(), DEC);
 	lcd.print("  ");
-	delay(2000);
+	//delay(2000);
 }
 
 void lcdPrintSolarPosition(LiquidCrystal_I2C lcd, SolarPosition s){

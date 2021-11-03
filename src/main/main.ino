@@ -15,18 +15,22 @@
 #define DIR_Y_PIN 6     // Nema 17 Y-Direction
 #define STEP_Y_PIN 3    // Nema 17 Y-Step
 #define LED_PIN 13
-#define CLICKS_PER_STEP 1500
-#define GEAR_RATIO 1 // Input speed / Output speed : Ratio > 1 => gear slows movement down 
-#define GEAR_RATIO_X 1 
-#define GEAR_RATIO_Y 1 
+#define MICROSECONDS_PER_STEP 7000
+#define MICROSECONDS_PER_STEP2 7000
+#define GEAR_RATIO 5 // Input speed / Output speed : Ratio > 1 => gear slows movement down 
+#define GEAR_RATIO_X 5 
+#define GEAR_RATIO_Y 5 
 #define NUM_STEPPERS 2
 #define STEPS_PER_REVOLUTION_NEMA17 200
 #define STEPS_PER_REVOLUTION_28BYJ 2048
 #define STEPPER_TYPE StepperType::BYJ28 
-#define TIMER1_OCR 550
+#define TIMER1_PRESCALER 64
+#define TIMER1_INTERVAL_US 1000 //Timer interval in microseconds
 
 
-//****Global variables****
+/******************************************************************************
+Global variables
+******************************************************************************/
 /*/For Nema17
 int xStepperPins[2] = { DIR_X_PIN, STEP_X_PIN };
 int yStepperPins[2] = { DIR_Y_PIN, STEP_Y_PIN };
@@ -41,8 +45,8 @@ ISR_Flags flags;
 //****Object Instances****
 LiquidCrystal_I2C lcd(0x27, 16, 2); //Instantiate and initialize LCD-Display, set the I2C Address to 0x27 for the LCD (16 chars and 2 line Display)
 RTC_DS1307 rtc;
-Stepper xStepper(xStepperPins, GEAR_RATIO_X, 0, STEPPER_TYPE, CLICKS_PER_STEP, STEPS_PER_REVOLUTION_28BYJ);
-Stepper yStepper(yStepperPins, GEAR_RATIO_Y, 1, STEPPER_TYPE, CLICKS_PER_STEP, STEPS_PER_REVOLUTION_28BYJ);
+Stepper xStepper(xStepperPins, GEAR_RATIO_X, 0, STEPPER_TYPE, MICROSECONDS_PER_STEP, STEPS_PER_REVOLUTION_28BYJ);
+Stepper yStepper(yStepperPins, GEAR_RATIO_Y, 1, STEPPER_TYPE, MICROSECONDS_PER_STEP2, STEPS_PER_REVOLUTION_28BYJ);
 
 //****Volatile variables (shared by interrupt and normal code)****
 volatile Stepper steppers[NUM_STEPPERS] = {xStepper, yStepper};
@@ -50,15 +54,15 @@ volatile Stepper steppers[NUM_STEPPERS] = {xStepper, yStepper};
 
 #pragma region ICR
 
-// Run the timer routine concurrently to the rest of the tasks included in the function
+
+//Run the timer routine concurrently to the rest of the tasks included in the function
 void runAndWait() {
-    timer1CompA_setNextInterruptInterval(&flags, steppers, NUM_STEPPERS);
+    timer1CompA_SetNextInterruptInterval(&flags, steppers, NUM_STEPPERS, TIMER1_PRESCALER);
     timer1CompA_On();
 
     while (flags.remainingSteppersFlag) {
         ledState = !ledState;
         digitalWrite(LED_PIN, ledState);
-        //delay(500);
         lcdPrintTime(lcd, rtc);
     }
 
@@ -110,7 +114,7 @@ ISR(TIMER1_COMPA_vect) {
         }
     }
 
-    timer1CompA_setNextInterruptInterval(&flags, steppers, NUM_STEPPERS);
+    timer1CompA_SetNextInterruptInterval(&flags, steppers, NUM_STEPPERS, TIMER1_PRESCALER);
 
     TCNT1 = 0;
 }
@@ -123,7 +127,8 @@ ISR(TIMER1_COMPA_vect) {
 void setup() {
 
     // Set Timer1
-    noInterrupts();
+    timer1CompA_Init(TIMER1_PRESCALER,TIMER1_INTERVAL_US);
+    /*noInterrupts();
     //1. Reset Timer/Counter Control Register A and B (TCCR1A, TCCR1B)
     TCCR1A = 0;
     TCCR1B = 0;
@@ -137,14 +142,12 @@ void setup() {
     TIMSK1 |= (1 << OCIE1A);
     //6. Set number of Timer pulses till interrupt
     OCR1A = TIMER1_OCR;
-    interrupts();
+    interrupts();*/
 
     // Set serial monitor
     Serial.begin(9600);
 
     // Set LCD-Display 
-    lcd.init();       // initialize lcd
-    lcd.backlight();  // turn on backlight// Set LCD-Display
     lcd.init();       // initialize lcd
     lcd.backlight();  // turn on backlight
     lcd.setCursor(0, 0);
@@ -165,10 +168,8 @@ void loop() {
   SolarPosition s =  SolarCalculator::getSolarPosition(now, g);
   lcdPrintSolarPosition(lcd,s);
   
-  steppers[0].prepareMovement(-35, &flags);
-  runAndWait();
-
-  steppers[1].prepareMovement(-35, &flags);
+  steppers[0].prepareMovement(45, &flags);
+  steppers[1].prepareMovement(45, &flags);
   runAndWait();
   
    //while(true);

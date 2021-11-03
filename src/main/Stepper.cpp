@@ -3,10 +3,10 @@
 
 
 //****Constructor****
-Stepper::Stepper(volatile int stepperPins[], float gearRatio = 1, unsigned int id = 0,StepperType t=StepperType::NEMA17, unsigned long clicksPerStep=CLICKS_PER_STEP, unsigned int stepsPerRevolution=STEPS_PER_REVOLUTION_NEMA17)
+Stepper::Stepper(volatile int stepperPins[], float gearRatio = 1, unsigned int id = 0,StepperType t=StepperType::NEMA17, unsigned long microsecondsPerStep=MICROSECONDS_PER_STEP, unsigned int stepsPerRevolution=STEPS_PER_REVOLUTION_NEMA17)
 {
     _type = t;
-    _clicksPerStep = clicksPerStep;
+    _microsecondsPerStep = microsecondsPerStep;
     _stepsPerRevolution = stepsPerRevolution;
     _gearRatio = gearRatio;
     _motorId = id;
@@ -137,8 +137,8 @@ int Stepper::steps2Angle(long motorSteps) {
     return motorAngle;
 }
 
-volatile unsigned long Stepper::getClicksPerStep(){
-  return _clicksPerStep;
+volatile unsigned long Stepper::getMicrosecondsPerStep(){
+  return _microsecondsPerStep;
 }
 
 volatile bool Stepper::getMovementDone(){

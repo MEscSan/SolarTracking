@@ -8,7 +8,7 @@
 #pragma once
 #include "Arduino.h"
 
-#define CLICKS_PER_STEP 600
+#define MICROSECONDS_PER_STEP 600
 #define STEPS_PER_REVOLUTION_NEMA17 200
 #define STEPS_PER_REVOLUTION_28BYJ 2048
 
@@ -68,7 +68,7 @@ class Stepper {
         volatile int getDirection();
         volatile unsigned int getStepCountInMovement();
         volatile unsigned int getTotalStepsRequested();
-        volatile unsigned long getClicksPerStep();
+        volatile unsigned long getMicrosecondsPerStep();
         long getStepPosition();
         
       
@@ -79,7 +79,7 @@ class Stepper {
     private:
         //Attributes
         volatile StepperType _type;                  // Motor type, either eihter NEMA17 or 28BYJ
-        volatile unsigned long _clicksPerStep;       // timer clicks between two steps, smaller is faster  
+        volatile unsigned long _microsecondsPerStep;       // timer clicks between two steps, smaller is faster  
         volatile unsigned int _stepsPerRevolution;
         volatile float _gearRatio;                   // Input speed / Output speed : Ratio > 1 => gear slows movement down 
         volatile unsigned int _motorId;               // Motor Id for using several motors

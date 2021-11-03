@@ -77,6 +77,23 @@ static Coordinates transform(Coordinates gps)
 }
 
 /******************************************************************************
+function:
+    shortcut to initialize GPS-device in output-mode with baudrate 9600
+******************************************************************************/
+void L76X_Init_9600() {
+
+    DEV_Set_Baudrate(115200);
+    L76X_Send_Command(SET_NMEA_OUTPUT);
+    L76X_Send_Command(SET_NMEA_BAUDRATE_9600);
+    DEV_Delay_ms(500);
+
+    L76X_Send_Command(9600);
+    DEV_Set_Baudrate(9600);
+    DEV_Delay_ms(500);
+    L76X_Send_Command(SET_NMEA_OUTPUT);
+}
+
+/******************************************************************************
 function:	
 	Send a command to the L76X，Automatic calculation of the code
 parameter:
@@ -103,8 +120,8 @@ void L76X_Send_Command(char *data)
     DEV_Uart_SendString(data);
     DEV_Uart_SendByte('*');
     DEV_Uart_SendString(Check_char);
-		DEV_Uart_SendByte('\r');
-		DEV_Uart_SendByte('\n');
+	DEV_Uart_SendByte('\r');
+	DEV_Uart_SendByte('\n');
 }
 
 void L76X_Exit_BackupMode()
