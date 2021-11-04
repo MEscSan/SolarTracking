@@ -45,6 +45,7 @@ ISR_Flags flags;
 //****Object Instances****
 LiquidCrystal_I2C lcd(0x27, 16, 2); //Instantiate and initialize LCD-Display, set the I2C Address to 0x27 for the LCD (16 chars and 2 line Display)
 RTC_DS1307 rtc;
+GNRMC gps;
 Stepper xStepper(xStepperPins, GEAR_RATIO_X, 0, STEPPER_TYPE, MICROSECONDS_PER_STEP, STEPS_PER_REVOLUTION_28BYJ);
 Stepper yStepper(yStepperPins, GEAR_RATIO_Y, 1, STEPPER_TYPE, MICROSECONDS_PER_STEP2, STEPS_PER_REVOLUTION_28BYJ);
 
@@ -63,7 +64,7 @@ void runAndWait() {
     while (flags.remainingSteppersFlag) {
         ledState = !ledState;
         digitalWrite(LED_PIN, ledState);
-        lcdPrintTime(lcd, rtc);
+        //lcdPrintTime(lcd, rtc);
     }
 
     flags.remainingSteppersFlag = 0;
@@ -157,16 +158,39 @@ void setup() {
 
     // Set LED-Pin
     pinMode(LED_PIN, OUTPUT);
+
+    // Ste GPS-Device
+    L76X_Init_9600();
 }
 
 void loop() {
      
   DateTime now = rtc.now();
+  gps = L76X_Gat_GNRMC();
+  Serial.print("\r\n");
+  Serial.print("Time:");
+  Serial.print(gps.Time_H);
+  Serial.print(":");
+  Serial.print(gps.Time_M); 
+  Serial.print(":");
+  Serial.println(gps.Time_S);
+  Serial.print("Status: ");
+  Serial.println(gps.Status);
+  Serial.print("Latitude: ");
+  Serial.print(gps.Lat);
+  Serial.print("\t Longitude: ");
+  Serial.println(gps.Lon);
+  Serial.print("Latitude area: ");
+  Serial.print(gps.Lat_area);
+  Serial.print("\t Longitude area: ");
+  Serial.print(gps.Lon_area);
+  lcdPrintGPS(lcd, gps);
   GeographicalCoordinate g;
-  g.Latitude = 0;//52.51;
-  g.Longitude = 0;//13.41;
+  g.Latitude = gps.Lat;//52.51;
+  g.Longitude = gps.Lon;//13.41;
   SolarPosition s =  SolarCalculator::getSolarPosition(now, g);
   lcdPrintSolarPosition(lcd,s);
+  
   
   steppers[0].prepareMovement(45, &flags);
   steppers[1].prepareMovement(45, &flags);

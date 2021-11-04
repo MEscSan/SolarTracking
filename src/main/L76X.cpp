@@ -91,6 +91,8 @@ void L76X_Init_9600() {
     DEV_Set_Baudrate(9600);
     DEV_Delay_ms(500);
     L76X_Send_Command(SET_NMEA_OUTPUT);
+
+    Serial.println("GPS initialized");
 }
 
 /******************************************************************************
@@ -145,11 +147,11 @@ GNRMC L76X_Gat_GNRMC()
     UDOUBLE Time = 0, latitude = 0, longitude = 0;
 
     GPS.Status = 0;
-
+    
 		GPS.Time_H = 0;
     GPS.Time_M = 0;
     GPS.Time_S = 0;
-	
+	    
     DEV_Uart_ReceiveString(buff_t, BUFFSIZE);
     //Serial.print(buff_t);
     add = 0; 
@@ -187,6 +189,8 @@ GNRMC L76X_Gat_GNRMC()
                         }else{
                              GPS.Status = 0;
                         }
+                        Serial.print("GPS Status");
+                        Serial.println(GPS.Status);
                     }else if(x == 3){
                         latitude = 0;
                         //If you need to modify, please re-edit the calculation method below.

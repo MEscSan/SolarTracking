@@ -7,11 +7,12 @@
 
 #pragma once
 #include <LiquidCrystal_I2C.h>
-#include "Stepper.h" 
+#include "Stepper.h"
+#include "SolarCalculator.h" 
 #include "RTClib.h"  
-#include "SolarCalculator.h"
+#include "L76X.h"
 
-
+void lcdPrintGPS(LiquidCrystal_I2C lcd, GNRMC gps);
 void lcdPrintTime(LiquidCrystal_I2C lcd, RTC_DS1307 rtc);
 void lcdPrintSolarPosition(LiquidCrystal_I2C lcd, SolarPosition s);
 

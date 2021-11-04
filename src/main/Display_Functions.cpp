@@ -1,6 +1,24 @@
 #pragma once
 #include "Display_Functions.h"
 
+void lcdPrintGPS(LiquidCrystal_I2C lcd, GNRMC gps){
+
+	if(gps.Status != 1) {
+    lcd.setCursor(0, 0);
+		lcd.print("GPS unavaliable");
+	}
+	else{
+  	lcd.setCursor(0, 0);
+  	lcd.print("Lat");
+  	lcd.print(gps.Lat);
+  	lcd.print(" ");
+  	lcd.print("Lon");
+  	lcd.print(gps.Lon);
+  	lcd.print(":");
+	}
+
+}
+
 void lcdPrintTime(LiquidCrystal_I2C lcd, RTC_DS1307 rtc){
 	DateTime now = rtc.now();
 	lcd.setCursor(0, 0);
