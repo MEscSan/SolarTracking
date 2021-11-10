@@ -23,7 +23,7 @@ Stepper::Stepper(volatile int stepperPins[], float gearRatio = 1, unsigned int i
         break;
     } 
     
-    // memcpy(destination, source, size in bytes)
+    // memmove(destination, source, size in bytes)
     memmove(_stepperPins, stepperPins, numPins*sizeof(volatile int));
 
     for (int i = 0; i < numPins; i++) {

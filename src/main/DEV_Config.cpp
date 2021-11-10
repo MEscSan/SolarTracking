@@ -30,7 +30,23 @@
 #
 ******************************************************************************/
 #include "DEV_Config.h"
-SoftwareSerial mySerial(2, 3); // RX, TX: Orange: 3; Blue: 2
+
+/*
+  Software serial multple serial test
+
+ Receives from the hardware serial, sends to software serial.
+ Receives from software serial, sends to hardware serial.
+
+ The circuit:
+ * RX is digital pin 2 (connect to TX of other device)
+ * TX is digital pin 3 (connect to RX of other device)
+
+ Note:
+ Not all pins on the Mega and Mega 2560 support change interrupts,
+ so only the following can be used for RX:
+ 10, 11, 12, 13, 50, 51, 52, 53, 62, 63, 64, 65, 66, 67, 68, 69
+*/
+SoftwareSerial mySerial(52, 53); // (RX, TX):  RX, Orange (3): 21; TX, Blue (2): 20
 
 /******************************************************************************
 function: 

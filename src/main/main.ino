@@ -8,7 +8,7 @@
 #include "RTClib.h"             //  RTC-Clock
 #include "ICR_Functions.h"      //  Complementary function-set for Timer Interrupts
 #include "Display_Functions.h"  //  Complementary function-set for 
-
+#include "miniIMU.h"
 
 #define DIR_X_PIN 5     // Nema17 X-Direction
 #define STEP_X_PIN 2    // Nema17 X-Step
@@ -23,7 +23,7 @@
 #define NUM_STEPPERS 2
 #define STEPS_PER_REVOLUTION_NEMA17 200
 #define STEPS_PER_REVOLUTION_28BYJ 2048
-#define STEPPER_TYPE StepperType::BYJ28 
+#define STEPPER_TYPE StepperType::NEMA17 
 #define TIMER1_PRESCALER 64
 #define TIMER1_INTERVAL_US 1000 //Timer interval in microseconds
 
@@ -31,13 +31,13 @@
 /******************************************************************************
 Global variables
 ******************************************************************************/
-/*/For Nema17
+//For Nema17
 int xStepperPins[2] = { DIR_X_PIN, STEP_X_PIN };
 int yStepperPins[2] = { DIR_Y_PIN, STEP_Y_PIN };
-*/
+/*
 //For 28BYJ:
 int xStepperPins[4] = { 11, 10, 9, 8 }; // Motor X: 11...8  
-int yStepperPins[4] = {  7,  6, 5, 4 }; // Motor Y: 7...4
+int yStepperPins[4] = {  7,  6, 5, 4 }; // Motor Y: 7...4*/
 bool  ledState = true;  //LED-status variable
 //****Struct Instances****
 ISR_Flags flags;
@@ -46,15 +46,15 @@ ISR_Flags flags;
 LiquidCrystal_I2C lcd(0x27, 16, 2); //Instantiate and initialize LCD-Display, set the I2C Address to 0x27 for the LCD (16 chars and 2 line Display)
 RTC_DS1307 rtc;
 GNRMC gps;
-Stepper xStepper(xStepperPins, GEAR_RATIO_X, 0, STEPPER_TYPE, MICROSECONDS_PER_STEP, STEPS_PER_REVOLUTION_28BYJ);
-Stepper yStepper(yStepperPins, GEAR_RATIO_Y, 1, STEPPER_TYPE, MICROSECONDS_PER_STEP2, STEPS_PER_REVOLUTION_28BYJ);
+MiniIMU imu(OutputType::EULER_ANG);//, DeviceVersion::V4,AxisDefinition::Y_right_Z_Down, true);
+Stepper xStepper(xStepperPins, GEAR_RATIO_X, 0, STEPPER_TYPE, MICROSECONDS_PER_STEP, STEPS_PER_REVOLUTION_NEMA17);
+Stepper yStepper(yStepperPins, GEAR_RATIO_Y, 1, STEPPER_TYPE, MICROSECONDS_PER_STEP2, STEPS_PER_REVOLUTION_NEMA17);
 
 //****Volatile variables (shared by interrupt and normal code)****
 volatile Stepper steppers[NUM_STEPPERS] = {xStepper, yStepper};
 
 
 #pragma region ICR
-
 
 //Run the timer routine concurrently to the rest of the tasks included in the function
 void runAndWait() {
@@ -63,8 +63,8 @@ void runAndWait() {
 
     while (flags.remainingSteppersFlag) {
         ledState = !ledState;
-        digitalWrite(LED_PIN, ledState);
-        //lcdPrintTime(lcd, rtc);
+        //digitalWrite(LED_PIN, ledState);
+        lcdPrintTime(lcd, rtc);
     }
 
     flags.remainingSteppersFlag = 0;
@@ -155,10 +155,17 @@ void setup() {
 
     // Set RTC-Clock
     rtc.begin();
+    if (! rtc.isrunning()) {
+      Serial.println("RTC is NOT running, let's set the time!");
+      // When time needs to be set on a new device, or after a power loss, the
+      // following line sets the RTC to the date & time this sketch was compiled
+      rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+    }
+
 
     // Set LED-Pin
     pinMode(LED_PIN, OUTPUT);
-
+    
     // Ste GPS-Device
     L76X_Init_9600();
 }
@@ -184,10 +191,11 @@ void loop() {
   Serial.print(gps.Lat_area);
   Serial.print("\t Longitude area: ");
   Serial.print(gps.Lon_area);
-  lcdPrintGPS(lcd, gps);
+  //lcdPrintGPS(lcd, gps);
+  
   GeographicalCoordinate g;
-  g.Latitude = gps.Lat;//52.51;
-  g.Longitude = gps.Lon;//13.41;
+  g.Latitude = 52.51;//gps.Lat;
+  g.Longitude = 13.41;//gps.Lon;
   SolarPosition s =  SolarCalculator::getSolarPosition(now, g);
   lcdPrintSolarPosition(lcd,s);
   

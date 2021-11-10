@@ -87,11 +87,10 @@ void L76X_Init_9600() {
     L76X_Send_Command(SET_NMEA_BAUDRATE_9600);
     DEV_Delay_ms(500);
 
-    L76X_Send_Command(9600);
+    //L76X_Send_Command(9600);
     DEV_Set_Baudrate(9600);
     DEV_Delay_ms(500);
     L76X_Send_Command(SET_NMEA_OUTPUT);
-
     Serial.println("GPS initialized");
 }
 
@@ -108,7 +107,7 @@ void L76X_Send_Command(char *data)
     UBYTE i = 0;
     DEV_Uart_SendByte('\r');
     DEV_Uart_SendByte('\n');
-    
+
     //printf(" 1i = %d Check =%x \n", i, Check);
     for(i=2; data[i] != '\0'; i++){
         Check ^= data[i];       //Calculate the check value
@@ -122,8 +121,8 @@ void L76X_Send_Command(char *data)
     DEV_Uart_SendString(data);
     DEV_Uart_SendByte('*');
     DEV_Uart_SendString(Check_char);
-	DEV_Uart_SendByte('\r');
-	DEV_Uart_SendByte('\n');
+  	DEV_Uart_SendByte('\r');
+  	DEV_Uart_SendByte('\n');
 }
 
 void L76X_Exit_BackupMode()
@@ -189,8 +188,8 @@ GNRMC L76X_Gat_GNRMC()
                         }else{
                              GPS.Status = 0;
                         }
-                        Serial.print("GPS Status");
-                        Serial.println(GPS.Status);
+                        //Serial.print("\nGPS Status");
+                        //Serial.println(GPS.Status);
                     }else if(x == 3){
                         latitude = 0;
                         //If you need to modify, please re-edit the calculation method below.
