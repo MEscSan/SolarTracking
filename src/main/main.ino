@@ -7,8 +7,8 @@
 #include "L76X.h"               //  GPS-Headers (II)
 #include "RTClib.h"             //  RTC-Clock
 #include "ICR_Functions.h"      //  Complementary function-set for Timer Interrupts
-#include "Display_Functions.h"  //  Complementary function-set for 
-#include "miniIMU.h"
+#include "Display_Functions.h"  //  Complementary function-set for LCD-Display
+#include "miniIMU.h"            //  9-DOF IMU
 
 #define DIR_X_PIN 5     // Nema17 X-Direction
 #define STEP_X_PIN 2    // Nema17 X-Step
@@ -37,8 +37,10 @@ int yStepperPins[2] = { DIR_Y_PIN, STEP_Y_PIN };
 /*
 //For 28BYJ:
 int xStepperPins[4] = { 11, 10, 9, 8 }; // Motor X: 11...8  
-int yStepperPins[4] = {  7,  6, 5, 4 }; // Motor Y: 7...4*/
+int yStepperPins[4] = {  7,  6, 5, 4 }; // Motor Y: 7...4
+*/
 bool  ledState = true;  //LED-status variable
+
 //****Struct Instances****
 ISR_Flags flags;
 
@@ -46,7 +48,7 @@ ISR_Flags flags;
 LiquidCrystal_I2C lcd(0x27, 16, 2); //Instantiate and initialize LCD-Display, set the I2C Address to 0x27 for the LCD (16 chars and 2 line Display)
 RTC_DS1307 rtc;
 GNRMC gps;
-MiniIMU imu(OutputType::EULER_ANG);//, DeviceVersion::V4,AxisDefinition::Y_right_Z_Down, true);
+MiniIMU imu;//, DeviceVersion::V4,AxisDefinition::Y_right_Z_Down, true);
 Stepper xStepper(xStepperPins, GEAR_RATIO_X, 0, STEPPER_TYPE, MICROSECONDS_PER_STEP, STEPS_PER_REVOLUTION_NEMA17);
 Stepper yStepper(yStepperPins, GEAR_RATIO_Y, 1, STEPPER_TYPE, MICROSECONDS_PER_STEP2, STEPS_PER_REVOLUTION_NEMA17);
 
@@ -121,10 +123,7 @@ ISR(TIMER1_COMPA_vect) {
 }
 #pragma endregion
 
-#pragma region Display-Functions
 
-#pragma endregion
-#pragma endregion
 void setup() {
 
     // Set Timer1
@@ -191,7 +190,7 @@ void loop() {
   Serial.print(gps.Lat_area);
   Serial.print("\t Longitude area: ");
   Serial.print(gps.Lon_area);
-  //lcdPrintGPS(lcd, gps);
+  lcdPrintGPS(lcd, gps);
   
   GeographicalCoordinate g;
   g.Latitude = 52.51;//gps.Lat;

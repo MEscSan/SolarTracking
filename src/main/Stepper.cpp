@@ -3,7 +3,7 @@
 
 
 //****Constructor****
-Stepper::Stepper(volatile int stepperPins[], float gearRatio = 1, unsigned int id = 0,StepperType t=StepperType::NEMA17, unsigned long microsecondsPerStep=MICROSECONDS_PER_STEP, unsigned int stepsPerRevolution=STEPS_PER_REVOLUTION_NEMA17)
+Stepper::Stepper(volatile int stepperPins[], float gearRatio, unsigned int id, StepperType t, unsigned long clicksPerStep, unsigned int stepsPerRevolution)
 {
     _type = t;
     _microsecondsPerStep = microsecondsPerStep;

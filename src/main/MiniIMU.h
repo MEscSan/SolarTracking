@@ -1,5 +1,21 @@
 // Class for Pololu Mini IMU-9
-// Code based on https://github.com/pololu/minimu-9-ahrs-arduino
+/* 
+Code based on
+MinIMU - 9 - Arduino - AHRS
+Pololu MinIMU - 9 + Arduino AHRS(Attitude and Heading Reference System):
+https://github.com/pololu/minimu-9-ahrs-arduino
+
+MinIMU-9-Arduino-AHRS is based on sf9domahrs by Doug Weibel and Jose Julio:
+http://code.google.com/p/sf9domahrs/
+sf9domahrs is based on ArduIMU v1.5 by Jordi Munoz and William Premerlani, Jose
+Julio and Doug Weibel:
+http://code.google.com/p/ardu-imu/
+
+MinIMU-9-Arduino-AHRS is free software: you can redistribute it and/or modify it
+under the terms of the GNU Lesser General Public License as published by the
+Free Software Foundation, either version 3 of the License, or (at your option)
+any later version.
+*/
 
 #ifndef _MINI_IMU_H_
 #define _MINI_IMU_H_
@@ -71,7 +87,7 @@ enum OutputType{
 
 class MiniIMU {
 	public:
-		MiniIMU(OutputType outType,DeviceVersion version = DeviceVersion::V4, AxisDefinition axis = AxisDefinition::Y_right_Z_Down, bool correctedData = true);
+		MiniIMU(DeviceVersion version = DeviceVersion::V4, AxisDefinition axis = AxisDefinition::Y_right_Z_Down, bool correctedData = true);
 
 		//Compass
 		void Compass_Heading();
@@ -91,23 +107,29 @@ class MiniIMU {
 		void Compass_Init();
 		void Read_Compass();
 
-		// Serial output
-		void Serial_Printdata();
+		// Data output
+		void Serial_Printdata(OutputType outType);
+        float* GetEulerAng();
+        float* GetDcmMatrix();
+        float* GetAnalogGyro();
+        float* GetAnalogAccel();
+        float* GetAnalogCompass();
 
         // Update
         void Update_IMU_Values();
 
-		//	Vector
+		//	Vector Operations
 		float Vector_Dot_Product(float vector1[3], float vector2[3]);
 		void Vector_Cross_Product(float vectorOut[3], float v1[3], float v2[3]);
 		void Vector_Scale(float vectorOut[3], float vectorIn[3], float scale2);
 		void Vector_Add(float vectorOut[3], float vectorIn1[3], float vectorIn2[3]);
+
+        // Matrix Operations
 		void Matrix_Multiply(float a[3][3], float b[3][3], float mat[3][3]);
 
     private:
         DeviceVersion _version;
         AxisDefinition _axisDef;
-        OutputType _outType;
         bool _correctedData;    //True will print the corrected data,
                                 //False will print uncorrected data of the gyros (with drift)
         LSM6 _gyro_acc;

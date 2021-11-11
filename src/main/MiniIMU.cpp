@@ -2,7 +2,7 @@
 #include "MiniIMU.h"
 
 #pragma region ctor
-MiniIMU::MiniIMU(OutputType outType, DeviceVersion version, AxisDefinition axis, bool correctedData) {
+MiniIMU::MiniIMU(DeviceVersion version, AxisDefinition axis, bool correctedData) {
 
     _version = version;
     _axisDef = axis;
@@ -333,11 +333,11 @@ void  MiniIMU::Read_Compass(){
 }
 #pragma endregion
 
-#pragma region Serial Output
-void MiniIMU::Serial_Printdata(void){
+#pragma region Data Output
+void MiniIMU::Serial_Printdata(OutputType outType){
     Serial.print("!");
 
-    switch (_outType)
+    switch (outType)
     {
         case OutputType::EULER_ANG:
             Serial.print("ANG:");
@@ -368,7 +368,7 @@ void MiniIMU::Serial_Printdata(void){
             Serial.print(_DCM_Matrix[2][2]);
             break;
         default:
-            Serial.print(",AN:");
+            Serial.print("ANALOGS:");
             Serial.print(_AN[0]);  //(int)read_adc(0)
             Serial.print(",");
             Serial.print(_AN[1]);
@@ -391,6 +391,68 @@ void MiniIMU::Serial_Printdata(void){
 
     Serial.println();
 }
+
+float* MiniIMU::GetEulerAng(){
+    float eulerAnglesDeg[3] = {0,0,0};
+    
+    float rollDeg = ToDeg(_roll);
+    float pitchDeg = ToDeg(_pitch);
+    float yawDeg = ToDeg(_yaw);
+
+    eulerAnglesDeg[0] = rollDeg;
+    eulerAnglesDeg[1] = pitchDeg;
+    eulerAnglesDeg[2] = yawDeg;
+
+    return eulerAnglesDeg;
+}
+
+
+float* MiniIMU::GetDcmMatrix() {
+    float dcmMatrix[3][3] = { 
+        {0,0,0},
+        {0,0,0},
+        {0,0,0}
+    }
+    
+    // memmove(destination, source, size in bytes)
+    memmove(dcmMatrix, _DCM_Matrix, 9 * sizeof(float));
+
+    return dcmMatrix;
+}
+
+float* MiniIMU::GetAnalogGyro(){
+    float analogGyro[3] = { 0,0,0 };
+    
+    // Gyroscope values stored elements 0 to 2 of _AN-array
+    for (int i = 0; i < 3; i++){
+        analogGyro[i] = _AN[i];
+    } 
+
+    return analogGyro;
+}
+
+float* MiniIMU::GetAnalogAccel(){
+    float analogAccel[3] = { 0,0,0 };
+
+    // Gyroscope values stored elements 3 to 5 of _AN-array
+    for (int i = 0; i < 3; i++) {
+        analogAccel[i] = _AN[i+3];
+    }
+
+    return analogAccel;
+}
+
+float* MiniIMU::GetAnalogCompass(){
+    float analogCompass[3] = { 0,0,0 };
+
+    analogCompass[0] = _c_magnetom_x;
+    analogCompass[1] = _c_magnetom_y;
+    analogCompass[2] = _c_magnetom_z;
+
+    return analogCompass;
+}
+
+
 #pragma endregion
 
 #pragma region Update
@@ -432,7 +494,7 @@ void MiniIMU::Update_IMU_Values(){
 }
 #pragma endregion
 
-#pragma region Vector
+#pragma region Vector Operations
 //Computes the dot product of two vectors
 float MiniIMU::Vector_Dot_Product(float vector1[3], float vector2[3]){
     float op = 0;
@@ -468,7 +530,7 @@ void MiniIMU::Vector_Add(float vectorOut[3], float vectorIn1[3], float vectorIn2
 }
 #pragma endregion
 
-#pragma region Matrix
+#pragma region Matrix Operations
 //Multiply two 3x3 matrixs. 
 void MiniIMU::Matrix_Multiply(float a[3][3], float b[3][3], float mat[3][3]){
     for (int x = 0; x < 3; x++)

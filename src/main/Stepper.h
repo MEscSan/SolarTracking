@@ -55,7 +55,7 @@ class Stepper {
         /// <param name="t"></param>
         /// <param name="clicksPerStep"></param>
         /// <param name="stepsPerRevolution"></param>
-        Stepper(volatile int stepperPins[], float gearRatio, unsigned int id, StepperType t,  unsigned long clicksPerStep, unsigned int stepsPerRevolution);
+        Stepper(volatile int stepperPins[], float gearRatio = 1, unsigned int id = 0, StepperType t = StepperType::NEMA17, unsigned long microsecondsPerStep = MICROSECONDS_PER_STEP, unsigned int stepsPerRevolution = STEPS_PER_REVOLUTION_NEMA17);
             
         // Public Methods
         void oneStep();
