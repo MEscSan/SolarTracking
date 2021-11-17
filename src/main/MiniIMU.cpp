@@ -6,7 +6,6 @@ MiniIMU::MiniIMU(DeviceVersion version, AxisDefinition axis, bool correctedData)
 
     _version = version;
     _axisDef = axis;
-    _outType = outType;
     _correctedData = correctedData;
 
     // Initialize private variables
@@ -38,16 +37,22 @@ MiniIMU::MiniIMU(DeviceVersion version, AxisDefinition axis, bool correctedData)
         memmove(_SENSOR_SIGN, sensor_Sign, 9*sizeof( int));
     }
 
-    // Initialize MiniIMU
+}
+#pragma endregion
+
+// Initialize MiniIMU
+#pragma region SetUp
+void MiniIMU::Init() {
     I2C_Init();
     Accel_Init();
     Compass_Init();
     Gyro_Init();
-
+        
     for (int i = 0; i < 32; i++)    // We take some readings...
     {
         Read_Gyro();
         Read_Accel();
+        
         for (int y = 0; y < 6; y++)   // Cumulate values
             _AN_OFFSET[y] += _AN[y];
         delay(20);
@@ -58,14 +63,13 @@ MiniIMU::MiniIMU(DeviceVersion version, AxisDefinition axis, bool correctedData)
     }
 
     _AN_OFFSET[5] -= GRAVITY * _SENSOR_SIGN[5];
-
+    
     Serial.println("Offset:");
     for (int y = 0; y < 6; y++) {
         Serial.println(_AN_OFFSET[y]);
     }
 
     _timer = millis();
-
 }
 #pragma endregion
 
@@ -250,7 +254,7 @@ void  MiniIMU::Read_Gyro(){
     }
     else {
         _gyro.read();
-
+        
         _AN[0] = _gyro.g.x;
         _AN[1] = _gyro.g.y;
         _AN[2] = _gyro.g.z;
@@ -286,6 +290,7 @@ void  MiniIMU::Accel_Init(){
 
 // Reads x,y and z accelerometer registers
 void  MiniIMU::Read_Accel(){
+  
     if(_version == DeviceVersion::V5){
         _gyro_acc.readAcc();
 
@@ -295,7 +300,6 @@ void  MiniIMU::Read_Accel(){
     }
     else{
         _compass.readAcc();
-
         _AN[3] = _compass.a.x >> 4; // shift right 4 bits to use 12-bit representation (1 g = 256)
         _AN[4] = _compass.a.y >> 4;
         _AN[5] = _compass.a.z >> 4;
@@ -325,7 +329,7 @@ void  MiniIMU::Read_Compass(){
     }
     else{
         _compass.readMag();
-
+        
         _magnetom_x = _SENSOR_SIGN[6] * _compass.m.x;
         _magnetom_y = _SENSOR_SIGN[7] * _compass.m.y;
         _magnetom_z = _SENSOR_SIGN[8] * _compass.m.z;
@@ -335,17 +339,20 @@ void  MiniIMU::Read_Compass(){
 
 #pragma region Data Output
 void MiniIMU::Serial_Printdata(OutputType outType){
-    Serial.print("!");
+    //Serial.print("!");
 
     switch (outType)
     {
         case OutputType::EULER_ANG:
-            Serial.print("ANG:");
+            Serial.print("Roll:");
             Serial.print(ToDeg(_roll));
             Serial.print(",");
+            Serial.print("Pitch:");
             Serial.print(ToDeg(_pitch));
             Serial.print(",");
+            Serial.print("Yaw:");
             Serial.print(ToDeg(_yaw));
+            Serial.print(",");
             break;
         case OutputType::DCM:
             Serial.print(",DCM:");
@@ -368,23 +375,31 @@ void MiniIMU::Serial_Printdata(OutputType outType){
             Serial.print(_DCM_Matrix[2][2]);
             break;
         default:
-            Serial.print("ANALOGS:");
+            Serial.print("GyroX:");
             Serial.print(_AN[0]);  //(int)read_adc(0)
             Serial.print(",");
+            Serial.print("GyroY:");
             Serial.print(_AN[1]);
             Serial.print(",");
+            Serial.print("GyroZ:");
             Serial.print(_AN[2]);
             Serial.print(",");
+            Serial.print("AccelX:");
             Serial.print(_AN[3]);
             Serial.print(",");
+            Serial.print("AccelY:");
             Serial.print(_AN[4]);
             Serial.print(",");
+            Serial.print("AccelZ:");
             Serial.print(_AN[5]);
             Serial.print(",");
+            Serial.print("CompassX:");
             Serial.print(_c_magnetom_x);
             Serial.print(",");
+            Serial.print("CompassY:");
             Serial.print(_c_magnetom_y);
             Serial.print(",");
+            Serial.print("CompassZ:");
             Serial.print(_c_magnetom_z);
             break;
     }
@@ -412,12 +427,12 @@ float* MiniIMU::GetDcmMatrix() {
         {0,0,0},
         {0,0,0},
         {0,0,0}
-    }
+    };
     
     // memmove(destination, source, size in bytes)
     memmove(dcmMatrix, _DCM_Matrix, 9 * sizeof(float));
 
-    return dcmMatrix;
+    return *dcmMatrix;
 }
 
 float* MiniIMU::GetAnalogGyro(){
@@ -487,8 +502,7 @@ void MiniIMU::Update_IMU_Values(){
         Drift_correction();
         Euler_angles();
         // ***
-
-        Serial_Printdata();
+    
     }
 
 }

@@ -125,7 +125,6 @@ ISR(TIMER1_COMPA_vect) {
 
 
 void setup() {
-
     // Set Timer1
     timer1CompA_Init(TIMER1_PRESCALER,TIMER1_INTERVAL_US);
     /*noInterrupts();
@@ -146,7 +145,7 @@ void setup() {
 
     // Set serial monitor
     Serial.begin(9600);
-
+    
     // Set LCD-Display 
     lcd.init();       // initialize lcd
     lcd.backlight();  // turn on backlight
@@ -165,14 +164,20 @@ void setup() {
     // Set LED-Pin
     pinMode(LED_PIN, OUTPUT);
     
-    // Ste GPS-Device
-    L76X_Init_9600();
+    // Set GPS-Device
+    //L76X_Init_9600();
+
+    
+    // Set MiniIMU
+    imu.Init();
 }
 
 void loop() {
-     
+  imu.Update_IMU_Values();
+  imu.Serial_Printdata(OutputType::EULER_ANG);
+  
   DateTime now = rtc.now();
-  gps = L76X_Gat_GNRMC();
+  /*gps = L76X_Gat_GNRMC();
   Serial.print("\r\n");
   Serial.print("Time:");
   Serial.print(gps.Time_H);
@@ -189,8 +194,8 @@ void loop() {
   Serial.print("Latitude area: ");
   Serial.print(gps.Lat_area);
   Serial.print("\t Longitude area: ");
-  Serial.print(gps.Lon_area);
-  lcdPrintGPS(lcd, gps);
+  Serial.print(gps.Lon_area);*/
+  lcdPrintTime(lcd, rtc);
   
   GeographicalCoordinate g;
   g.Latitude = 52.51;//gps.Lat;
@@ -198,10 +203,10 @@ void loop() {
   SolarPosition s =  SolarCalculator::getSolarPosition(now, g);
   lcdPrintSolarPosition(lcd,s);
   
-  
+  /*
   steppers[0].prepareMovement(45, &flags);
   steppers[1].prepareMovement(45, &flags);
-  runAndWait();
+  runAndWait();*/
   
-   //while(true);
+  //while(true);
 }

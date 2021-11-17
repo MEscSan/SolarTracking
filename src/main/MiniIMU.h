@@ -47,12 +47,12 @@ any later version.
 
 // LSM303/LIS3MDL magnetometer calibration constants; use the Calibrate example from
 // the Pololu LSM303 or LIS3MDL library to find the right values for your board
-#define M_X_MIN -1000
-#define M_Y_MIN -1000
-#define M_Z_MIN -1000
-#define M_X_MAX +1000
-#define M_Y_MAX +1000
-#define M_Z_MAX +1000
+#define M_X_MIN -4240
+#define M_Y_MIN +1597
+#define M_Z_MIN +1986
+#define M_X_MAX -4114
+#define M_Y_MAX +1694
+#define M_Z_MAX +2131
 
 #define Kp_ROLLPITCH 0.02
 #define Ki_ROLLPITCH 0.00002
@@ -87,7 +87,10 @@ enum OutputType{
 
 class MiniIMU {
 	public:
-		MiniIMU(DeviceVersion version = DeviceVersion::V4, AxisDefinition axis = AxisDefinition::Y_right_Z_Down, bool correctedData = true);
+		MiniIMU(DeviceVersion version = DeviceVersion::V5, AxisDefinition axis = AxisDefinition::Y_right_Z_Down, bool correctedData = true);
+
+        //SetUp
+        void Init();
 
 		//Compass
 		void Compass_Heading();
