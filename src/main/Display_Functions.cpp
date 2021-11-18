@@ -44,3 +44,11 @@ void lcdPrintSolarPosition(LiquidCrystal_I2C lcd, SolarPosition s){
 	lcd.print(s.Zenith);
 	lcd.print(" ");
 }
+
+void lcsPrintYaw(LiquidCrystal_I2C lcd, MiniIMU imu){
+    float yaw = imu.GetYaw();
+    lcd.setCursor(0,0);
+    lcd.print("N ");
+    lcd.print(yaw);
+    lcd.println("°");
+}

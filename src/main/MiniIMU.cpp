@@ -407,6 +407,12 @@ void MiniIMU::Serial_Printdata(OutputType outType){
     Serial.println();
 }
 
+float MiniIMU::GetYaw(){
+  float yaw = -420;
+  yaw = ToDeg(_yaw);
+  return yaw;  
+}
+
 float* MiniIMU::GetEulerAng(){
     float eulerAnglesDeg[3] = {0,0,0};
     

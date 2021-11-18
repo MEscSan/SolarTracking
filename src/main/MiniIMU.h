@@ -113,6 +113,7 @@ class MiniIMU {
 		// Data output
 		void Serial_Printdata(OutputType outType);
         float* GetEulerAng();
+        float GetYaw();
         float* GetDcmMatrix();
         float* GetAnalogGyro();
         float* GetAnalogAccel();
