@@ -46,6 +46,7 @@ void MiniIMU::Init() {
     I2C_Init();
     Accel_Init();
     Compass_Init();
+    Compass_AutoCalibrate();
     Gyro_Init();
         
     for (int i = 0; i < 32; i++)    // We take some readings...
@@ -88,16 +89,16 @@ void  MiniIMU::Compass_Heading(){
     sin_pitch = sin(_pitch);
 
     // adjust for LSM303 compass axis offsets/sensitivity differences by scaling to +/-0.5 range
-    _c_magnetom_x = (float)(_magnetom_x - _SENSOR_SIGN[6] * M_X_MIN) / (M_X_MAX - M_X_MIN) - _SENSOR_SIGN[6] * 0.5;
-    _c_magnetom_y = (float)(_magnetom_y - _SENSOR_SIGN[7] * M_Y_MIN) / (M_Y_MAX - M_Y_MIN) - _SENSOR_SIGN[7] * 0.5;
-    _c_magnetom_z = (float)(_magnetom_z - _SENSOR_SIGN[8] * M_Z_MIN) / (M_Z_MAX - M_Z_MIN) - _SENSOR_SIGN[8] * 0.5;
+    _c_magnetom_x = (float)(_magnetom_x - _SENSOR_SIGN[6] * _M_X_MIN) / (_M_X_MAX - _M_X_MIN) - _SENSOR_SIGN[6] * 0.5;
+    _c_magnetom_y = (float)(_magnetom_y - _SENSOR_SIGN[7] * _M_Y_MIN) / (_M_Y_MAX - _M_Y_MIN) - _SENSOR_SIGN[7] * 0.5;
+    _c_magnetom_z = (float)(_magnetom_z - _SENSOR_SIGN[8] * _M_Z_MIN) / (_M_Z_MAX - _M_Z_MIN) - _SENSOR_SIGN[8] * 0.5;
 
     // Tilt compensated Magnetic filed X:
     MAG_X = _c_magnetom_x * cos_pitch + _c_magnetom_y * sin_roll * sin_pitch + _c_magnetom_z * cos_roll * sin_pitch;
     // Tilt compensated Magnetic filed Y:
     MAG_Y = _c_magnetom_y * cos_roll - _c_magnetom_z * sin_roll;
     // Magnetic Heading
-    MAG_Heading = atan2(-MAG_Y, MAG_X);
+    _MAG_Heading = atan2(-MAG_Y, MAG_X);
 }
 #pragma endregion
 
@@ -130,8 +131,8 @@ void  MiniIMU::Normalize(void){
 
 /**************************************************/
 void  MiniIMU::Drift_correction(void){
-    float mag_heading_x;
-    float mag_heading_y;
+    float MAG_Heading_x;
+    float MAG_Heading_y;
     float errorCourse;
     //Compensation the Roll, Pitch and Yaw drift. 
     static float Scaled_Omega_P[3];
@@ -157,9 +158,9 @@ void  MiniIMU::Drift_correction(void){
     //*****YAW***************
     // We make the gyro YAW drift correction based on compass magnetic heading
 
-    mag_heading_x = cos(MAG_Heading);
-    mag_heading_y = sin(MAG_Heading);
-    errorCourse = (_DCM_Matrix[0][0] * mag_heading_y) - (_DCM_Matrix[1][0] * mag_heading_x);  //Calculating YAW error
+    MAG_Heading_x = cos(_MAG_Heading);
+    MAG_Heading_y = sin(_MAG_Heading);
+    errorCourse = (_DCM_Matrix[0][0] * MAG_Heading_y) - (_DCM_Matrix[1][0] * MAG_Heading_x);  //Calculating YAW error
     Vector_Scale(_errorYaw, &_DCM_Matrix[2][0], errorCourse); //Applys the yaw correction to the XYZ rotation of the aircraft, depeding the position.
 
     Vector_Scale(&Scaled_Omega_P[0], &_errorYaw[0], Kp_YAW);//.01proportional of YAW.
@@ -319,6 +320,35 @@ void  MiniIMU::Compass_Init(){
     }
 }
 
+void MiniIMU::Compass_AutoCalibrate(){
+	LIS3MDL::vector<int16_t> running_min = { 32767, 32767, 32767 }, running_max = { -32768, -32768, -32768 };
+  char report[80];
+	for (int i = 0; i < 32; i++){
+		_mag.read();
+
+		running_min.x = min(running_min.x, _mag.m.x);
+		running_min.y = min(running_min.y, _mag.m.y);
+		running_min.z = min(running_min.z, _mag.m.z);
+
+		running_max.x = max(running_max.x, _mag.m.x);
+		running_max.y = max(running_max.y, _mag.m.y);
+		running_max.z = max(running_max.z, _mag.m.z);
+
+   snprintf(report, sizeof(report), "min: {%+6d, %+6d, %+6d}   max: {%+6d, %+6d, %+6d}",
+    running_min.x, running_min.y, running_min.z,
+    running_max.x, running_max.y, running_max.z);
+  Serial.println(report);
+	}
+
+	_M_X_MAX = running_max.x;
+	_M_Y_MAX = running_max.y;
+	_M_Z_MAX = running_max.z;
+
+	_M_X_MIN = running_min.x;
+	_M_Y_MIN = running_min.y;
+	_M_Z_MIN = running_min.z;
+}
+
 void  MiniIMU::Read_Compass(){
     if(_version == DeviceVersion::V5){
         _mag.read();
@@ -407,10 +437,8 @@ void MiniIMU::Serial_Printdata(OutputType outType){
     Serial.println();
 }
 
-float MiniIMU::GetYaw(){
-  float yaw = -420;
-  yaw = ToDeg(_yaw);
-  return yaw;  
+float MiniIMU::GetYaw(){ 
+  return ToDeg(_yaw);  
 }
 
 float* MiniIMU::GetEulerAng(){

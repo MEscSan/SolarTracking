@@ -16,6 +16,6 @@
 void lcdPrintGPS(LiquidCrystal_I2C lcd, GNRMC gps);
 void lcdPrintTime(LiquidCrystal_I2C lcd, RTC_DS1307 rtc);
 void lcdPrintSolarPosition(LiquidCrystal_I2C lcd, SolarPosition s);
-void lcsPrintYaw(LiquidCrystal_I2C lcd, MiniIMU imu);
+void lcdPrintYaw(LiquidCrystal_I2C lcd, MiniIMU imu);
 
 #endif

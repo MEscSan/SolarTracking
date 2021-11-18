@@ -174,8 +174,8 @@ void setup() {
 
 void loop() {
   imu.Update_IMU_Values();
-  imu.Serial_Printdata(OutputType::EULER_ANG);
-  
+  //imu.Serial_Printdata(OutputType::EULER_ANG);
+  lcdPrintYaw(lcd, imu);
   DateTime now = rtc.now();
   /*gps = L76X_Gat_GNRMC();
   Serial.print("\r\n");
@@ -195,7 +195,7 @@ void loop() {
   Serial.print(gps.Lat_area);
   Serial.print("\t Longitude area: ");
   Serial.print(gps.Lon_area);*/
-  lcdPrintTime(lcd, rtc);
+  //lcdPrintTime(lcd, rtc);
   
   GeographicalCoordinate g;
   g.Latitude = 52.51;//gps.Lat;
@@ -209,4 +209,5 @@ void loop() {
   runAndWait();*/
   
   //while(true);
+  delay(100);
 }

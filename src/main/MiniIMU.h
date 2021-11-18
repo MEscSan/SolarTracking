@@ -47,12 +47,16 @@ any later version.
 
 // LSM303/LIS3MDL magnetometer calibration constants; use the Calibrate example from
 // the Pololu LSM303 or LIS3MDL library to find the right values for your board
-#define M_X_MIN -4240
-#define M_Y_MIN +1597
-#define M_Z_MIN +1986
-#define M_X_MAX -4114
-#define M_Y_MAX +1694
-#define M_Z_MAX +2131
+//min: { -4140,   +372,   +661}   max: { -4067,   +480,   +798}
+
+//min: { -1318,  -1843,   +303}   max: { -1037,  -1744,   +485}
+
+#define M_X_MIN -1318
+#define M_Y_MIN -1843
+#define M_Z_MIN +303
+#define M_X_MAX -1037
+#define M_Y_MAX -1744
+#define M_Z_MAX +485
 
 #define Kp_ROLLPITCH 0.02
 #define Ki_ROLLPITCH 0.00002
@@ -108,6 +112,7 @@ class MiniIMU {
 		void Accel_Init();
 		void Read_Accel();
 		void Compass_Init();
+		void Compass_AutoCalibrate();
 		void Read_Compass();
 
 		// Data output
@@ -141,6 +146,14 @@ class MiniIMU {
         
         L3G _gyro;
         LSM303 _compass;
+
+		//Compass calibration constants:
+		int _M_X_MIN = -1318;
+		int _M_Y_MIN = -1843;
+		int _M_Z_MIN = 303;
+		int _M_X_MAX = -1037;
+		int _M_Y_MAX = - 1744;
+		int _M_Z_MAX = 485;
         
         float _G_Dt;    // Integration time (DCM algorithm)  We will run the integration loop at 50Hz if possible
         unsigned int _counter;
@@ -163,7 +176,7 @@ class MiniIMU {
         float _c_magnetom_x;
         float _c_magnetom_y;
         float _c_magnetom_z;
-        float MAG_Heading;
+        float _MAG_Heading;
 
         float _Accel_Vector[3] = { 0,0,0 }; //Store the acceleration in a vector
         float _Gyro_Vector[3]= { 0,0,0 };//Store the gyros turn rate in a vector
