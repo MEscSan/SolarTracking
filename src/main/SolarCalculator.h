@@ -1,3 +1,5 @@
+// Class with static functions for calculating solar-position and the needed angles for the solar-tracking axis
+// Equations from: http://geoastro.de/SME/tk/index.htm
 #ifndef _SOLARCALCULATOR_H_
 #define _SOLARCALCULATOR_H_
 
@@ -10,7 +12,12 @@
 // Mathematical constants
 #define PI 3.14159265359
 
-// Equations from: http://geoastro.de/SME/tk/index.htm
+// Constants and length for zenith-to-motorAngle calculation
+#define PI_HALF 1.57079632679 
+#define RHO 0.84318499417
+#define A  21.42574386106
+#define B 13.8
+#define THREAD_PITCH 1.25
 
 //****Structs****
 /*typedef struct Date {
@@ -50,7 +57,8 @@ class SolarCalculator {
 
 		static bool isLeapYear(int currentYear);
 		static int getDayInYear(DateTime d);
-		
+		static int zenithChange2MotorAngle(double zenithOld, double zenithNew);
+
 		static double equationOfTime(int dayInYear);
 		static double decline(int dayInYear);
 		static double hourAngle(double currentLongitude, double eqTime, int currentHour, int currentMinute);

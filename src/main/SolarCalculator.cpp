@@ -120,6 +120,35 @@ double SolarCalculator::zenith(double zenithPrecalculation) {
   return zenith;
 }
 
+// Convert from zenith to Motor-Angle, needed for Zenith-Tracking
+/*******************************************************************
+Conditions:
+-> threaded bar with thread-pitch 1.25
+-> constants are application specific
+********************************************************************/
+int SolarCalculator::zenithChange2MotorAngle(double zenithOld, double zenithNew) {
+
+    // 1. Get required threaded-bar translation
+    double c0Sqr = ((-cos(zenithOld - RHO - PI_HALF) * 2 * A * B) + (pow(A, 2) + pow(B, 2)));
+    double c0 = sqrt(c0Sqr);
+
+    double c1Sqr = ((-cos(zenithNew - RHO - PI_HALF) * 2 * A * B) + (pow(A, 2) + pow(B, 2)));
+    double c1 = sqrt(c1Sqr);
+
+    // Translation
+    double deltaC = c1 - c0;
+
+    // ToDo: Check that deltaC is within Min-Max
+
+    // 2. Convert translation to thread-bar turns
+    double numRevolutions = deltaC / THREAD_PITCH;
+
+    // 3. Convert thread-bar turns to motor-steps
+    int motorAngle = (int)numRevolutions * 360;
+
+    return motorAngle;
+}
+
 // Solar azimuth in degrees
 double SolarCalculator::azimuth(double zenithPrecalculation, GeographicalCoordinate g, AstronomicalCoordinate a, DateTime t) {
   double azimuth = 0;

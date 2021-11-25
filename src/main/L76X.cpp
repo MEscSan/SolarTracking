@@ -91,7 +91,6 @@ void L76X_Init_9600() {
     DEV_Set_Baudrate(9600);
     DEV_Delay_ms(500);
     L76X_Send_Command(SET_NMEA_OUTPUT);
-    Serial.println("GPS initialized");
 }
 
 /******************************************************************************

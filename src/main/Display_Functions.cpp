@@ -1,14 +1,14 @@
 #pragma once
 #include "Display_Functions.h"
 
-void lcdPrintGPS(LiquidCrystal_I2C lcd, GNRMC gps){
+void lcdPrintGPS(LiquidCrystal_I2C lcd, GNRMC gps, int row){
 
 	if(gps.Status != 1) {
-    lcd.setCursor(0, 0);
+    lcd.setCursor(0, row);
 		lcd.print("GPS unavaliable");
 	}
 	else{
-  	lcd.setCursor(0, 0);
+  	lcd.setCursor(0, row);
   	lcd.print("Lat");
   	lcd.print(gps.Lat);
   	lcd.print(" ");
@@ -19,9 +19,9 @@ void lcdPrintGPS(LiquidCrystal_I2C lcd, GNRMC gps){
 
 }
 
-void lcdPrintTime(LiquidCrystal_I2C lcd, RTC_DS1307 rtc){
+void lcdPrintTime(LiquidCrystal_I2C lcd, RTC_DS1307 rtc, int row){
 	DateTime now = rtc.now();
-	lcd.setCursor(0, 0);
+	lcd.setCursor(0, row);
 	lcd.print(now.day(), DEC);
 	lcd.print("/");
 	lcd.print(now.month(), DEC);
@@ -35,8 +35,8 @@ void lcdPrintTime(LiquidCrystal_I2C lcd, RTC_DS1307 rtc){
 	//delay(2000);
 }
 
-void lcdPrintSolarPosition(LiquidCrystal_I2C lcd, SolarPosition s){
-	lcd.setCursor(0, 1);
+void lcdPrintSolarPosition(LiquidCrystal_I2C lcd, SolarPosition s, int row){
+	lcd.setCursor(0, row);
 	lcd.print("A");
 	lcd.print(s.Azimuth);
 	lcd.print(" ");
@@ -45,9 +45,9 @@ void lcdPrintSolarPosition(LiquidCrystal_I2C lcd, SolarPosition s){
 	lcd.print(" ");
 }
 
-void lcdPrintYaw(LiquidCrystal_I2C lcd, MiniIMU imu){
+void lcdPrintCompassHeading(LiquidCrystal_I2C lcd, MiniIMU imu, int row){
     float yaw = imu.GetYaw();
-    lcd.setCursor(0,0);
+    lcd.setCursor(0,row);
     lcd.print("N ");
     lcd.print(yaw,0);
     lcd.print("    ");

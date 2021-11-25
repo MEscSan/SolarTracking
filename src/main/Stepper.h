@@ -12,6 +12,7 @@
 #define STEPS_PER_REVOLUTION_NEMA17 200
 #define STEPS_PER_REVOLUTION_28BYJ 2048
 
+
 #pragma region Enums
 enum StepperType {
     NEMA17,
@@ -73,6 +74,7 @@ class Stepper {
         
       
         void setMovementDone(volatile bool value);
+        void setDirection(volatile int dir);
         void setStepCountInMovement(volatile unsigned int value);
         void setStepPosition(long value);
         

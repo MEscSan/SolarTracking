@@ -99,12 +99,13 @@ void Stepper::prepareMovement(int angleRequested, ISR_Flags *flags) {
     flags->remainingSteppersFlag |= (1 << _motorId); // "Add" motor to byte-flag
 }
 
+
 // Convert from degree to motor-steps
 int Stepper::angle2Steps(int motorAngle) {
     int motorSteps = 0;
 
     //motorAngle = motorAngle - (motorAngle/360)*360; // Check that angle isn't bigger than 360�
-    motorSteps = (long)motorAngle * _stepsPerRevolution * _gearRatio / 360.0;
+    motorSteps = (int)motorAngle * _stepsPerRevolution * _gearRatio / 360.0;
 
     /*
     //For Debug-purpose only
@@ -163,6 +164,13 @@ long Stepper::getStepPosition() {
 
 void Stepper::setMovementDone(volatile bool value){
   _movementDone = value;
+}
+
+void Stepper::setDirection(volatile int dir) {
+    // Direction can only be 1 (counterclockwise) or 0 (clockwise)
+    if (dir == 0 || dir == 1) {
+        _dir = dir;
+    }
 }
 
 void Stepper::setStepCountInMovement(volatile unsigned int value){

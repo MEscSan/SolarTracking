@@ -337,7 +337,7 @@ void MiniIMU::Compass_AutoCalibrate(){
    snprintf(report, sizeof(report), "min: {%+6d, %+6d, %+6d}   max: {%+6d, %+6d, %+6d}",
     running_min.x, running_min.y, running_min.z,
     running_max.x, running_max.y, running_max.z);
-  Serial.println(report);
+  //Serial.println(report);
 	}
 
 	_M_X_MAX = running_max.x;
