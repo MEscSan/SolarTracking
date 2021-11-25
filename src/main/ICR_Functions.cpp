@@ -15,6 +15,7 @@ unsigned long microseconds2Clicks(int prescaler, unsigned long interval, int clk
     return intervalInClicks;
 }
 
+#pragma region TIMER 1 Compare/Match A
 /******************************************************************************
 function:
     Initialize timer 1 in compare/match mode (A)
@@ -119,3 +120,68 @@ function:
 void timer1CompA_Off(){
     TIMSK1 &= ~(1 << OCIE1A);
 }
+#pragma endregion
+
+#pragma region TIMER 1 Compare/Match B
+/******************************************************************************
+function:
+    Initialize timer 1 in compare/match mode (B)
+parameter:
+    prescaler :timer prescaler (1,8, 64, 256, 1024)
+    interval  :timer interval (in microseconds)
+******************************************************************************/
+void timer1CompB_Init(int prescaler, unsigned long interval) {
+
+    // Set Timer1
+    noInterrupts();
+    //1. Reset Timer/Counter Control Register A and B (TCCR1A, TCCR1B)
+    TCCR1A = 0;
+    TCCR1B = 0;
+    //2. Reset Timer/Counter Register
+    TCNT1 = 0;
+    //3. Set PWM-Mode to CTC
+    TCCR1B |= (1 << WGM12);
+    //4. Set prescaler value in Clock-Select bits of TCCR1B-Register (CS12, CS11, CS10)
+    switch (prescaler) {
+    case 8:
+        TCCR1B |= B00000010;    //Prescaler 8
+        break;
+    case 64:
+        TCCR1B |= B00000011;    //Prescaler 64
+        break;
+    case 256:
+        TCCR1B |= B00000100;    //Prescaler 256
+        break;
+    case 1024:
+        TCCR1B |= B00000101;    //Prescaler 1024
+        break;
+    default:
+        TCCR1B |= B00000001;    //Prescaler 1
+        break;
+    }
+    //5. Set timer Mode in Timer Interrupt Mask Register 1 (TIMSK1)
+    TIMSK1 |= (1 << OCIE1B);
+    //6. Set number of Timer pulses till interrupt
+    int intervalInClicks = microseconds2Clicks(prescaler, interval);
+    OCR1B = intervalInClicks;
+    interrupts();
+}
+
+/******************************************************************************
+function:
+    Turn Timer-Interrupt 1 - Compare match B on
+    Set bit OCIE1B (3rd bit) in register TIMSK1 to 1
+******************************************************************************/
+void timer1CompB_On() {
+    TIMSK1 |= (1 << OCIE1B);
+}
+
+/******************************************************************************
+function:
+    Turn Timer-Interrupt 1 - Compare match A off
+    Set bit OCIE1B (3rd bit) in register TIMSK1 to 0 (0 == ~1)
+******************************************************************************/
+void timer1CompB_Off() {
+    TIMSK1 &= ~(1 << OCIE1B);
+}
+#pragma endregion
