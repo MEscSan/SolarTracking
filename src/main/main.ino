@@ -20,12 +20,12 @@
 #define DIR_Y_PIN 6     // Nema 17 Y-Direction
 #define STEP_Y_PIN 3    // Nema 17 Y-Step
 #define LED_PIN 13
-#define MICROSECONDS_PER_STEP 5000
-#define MICROSECONDS_PER_STEP_X 7000
-#define MICROSECONDS_PER_STEP_Y 7000
+#define MICROSECONDS_PER_STEP 900
+#define MICROSECONDS_PER_STEP_X 900
+#define MICROSECONDS_PER_STEP_Y 900
 #define GEAR_RATIO 5 // Input speed / Output speed : Ratio > 1 => gear slows movement down 
-#define GEAR_RATIO_X 5 
-#define GEAR_RATIO_Y 5 
+#define GEAR_RATIO_X 19.2 
+#define GEAR_RATIO_Y 19.2 
 #define NUM_STEPPERS 2
 #define STEPS_PER_REVOLUTION_NEMA17 200
 #define STEPS_PER_REVOLUTION_28BYJ 2048
@@ -61,14 +61,18 @@
 Global variables
 ******************************************************************************/
 //For Nema17
+int dirX = -1;
+volatile int timerCount = 0;
+int dirY = -1;
 int xStepperPins[2] = { DIR_X_PIN, STEP_X_PIN };
 int yStepperPins[2] = { DIR_Y_PIN, STEP_Y_PIN };
-bool  ledState = true;  //LED-status variable
+bool ledState = true;  //LED-status variable
 bool isInStartPosition = false;
 bool isLeveled = false;
 bool isReadyForLeveling = false;
 bool isNotOriented = true;
 unsigned long programMillis;
+unsigned long programMicros; 
 DateTime programTime;
 SolarPosition sunPosition;
 SolarPosition trackerPosition;
@@ -113,10 +117,9 @@ void runAndWait() {
     flags.nextStepperFlag = 0;
 }
 
-
 ISR(TIMER1_COMPA_vect) {
-    unsigned int tmpCtr = OCR1A;
 
+    unsigned int tmpCtr = OCR1A;
     OCR1A = 65500;
     for (int i = 0; i < NUM_STEPPERS; i++) {
 
@@ -161,6 +164,55 @@ ISR(TIMER1_COMPA_vect) {
 
     TCNT1 = 0;
 }
+
+ISR(TIMER1_COMPB_vect){   
+      /*  
+      switch (results.value) {
+        case IR_REMOTE_2:    
+            dirY = 0;   // Y+
+            Serial.println("S2: Y+  ");
+            break;
+        case IR_REMOTE_8:  
+            dirY = 1;  // Y-
+            Serial.println("S2: Y-  ");
+            break;
+        case IR_REMOTE_4:  
+            dirX = 0;  // X+
+            Serial.println("S2: X+  ");
+            break;
+        case IR_REMOTE_6:
+            dirX = 1;    // X-
+            Serial.println("S2: X-  ");
+            break;
+        case IR_REMOTE_5: 
+            dirX = -1;   // Stop both motors
+            dirY = -1;
+            Serial.println("S2: Stop  ");
+            break;
+        case IR_REMOTE_1:
+             isNotOriented = false;
+             Serial.println("S2: North found!");
+             break;
+        default: // Any other button pressed (except for 0, which changes State)
+            // Do nothing
+            break;
+        }
+      */
+      //if(dirX >= 0){
+      xStepper.oneStep(1);
+      //}
+      //if(diY >)
+     if(timerCount<4000){
+      timerCount++;
+      }
+     else{
+      timer1CompB_Off();
+      }
+     OCR1B = microseconds2Clicks(TIMER1_PRESCALER,900);
+     Serial.println(micros());
+     TCNT1  = 0;
+}
+
 #pragma endregion
 
 #pragma region State machine
@@ -182,20 +234,28 @@ void state0_TurnOn(){
 
     // Receive IR-remote signal
     if (irrecv.decode(&results)) { // Waiting for decoding
-       switch (results.value) {
-        case IR_REMOTE_0:    
-            isReadyForLeveling = true;
-            break;
-        case IR_REMOTE_3:
-             isInStartPosition = true;
-             break;
-        default: // Any other button pressed (except for 0, which changes State)
-            // Do nothing
-            break;
-      }
+       irrecv.resume(); // Receive the next value
     }
-    irrecv.resume(); // Receive the next value
 
+     switch (results.value) {
+      case IR_REMOTE_0:    
+          isReadyForLeveling = true;
+          
+          break;
+      case IR_REMOTE_3:
+           isInStartPosition = true;
+           break;
+      default: // Any other button pressed (except for 0, which changes State)
+          // Do nothing
+          break;
+    }
+
+
+    // Change to state  after 30s
+    if((millis()-programMillis) > 30000){
+      programMillis = millis();
+      isReadyForLeveling = true;  
+    }
 }
 // State 1: initalisation, adjust tripod
 void state1_InitLeveling() {
@@ -209,21 +269,24 @@ void state2_InitNorth() {
     
     if(machine.executeOnce){
       isNotOriented = true;
+      programMillis = millis();
       lcd.setCursor(0, 0);
       lcd.print("S2: Spiegel zum  ");
       lcd.setCursor(0, 1);
       lcd.print("Norden richten");  
+      dirX = -1;
+      dirY = -1;
+      timer1CompB_On();
     }
     
-    int dirX = -1;
-    int dirY = -1;
+
     if(isNotOriented){
       if (irrecv.decode(&results)) { // Waiting for decoding
-        int val = results.value;
         // Print out the decoded results
         irrecv.resume(); // Receive the next value
-
-        switch (results.value) {
+      }
+      /*
+      switch (results.value) {
         case IR_REMOTE_2:    
             dirY = 0;   // Y+
             lcd.clear();
@@ -258,20 +321,9 @@ void state2_InitNorth() {
         default: // Any other button pressed (except for 0, which changes State)
             // Do nothing
             break;
-        }
-
-        if (dirX > -1) {
-            xStepper.setDirection(dirX);
-            xStepper.oneStep();
-        }
-        if (dirY > -1) {
-            yStepper.setDirection(dirY);
-            yStepper.oneStep();
-        }
-
-        delayMicroseconds(MICROSECONDS_PER_STEP);
-      }
+        }*/
     }
+    
 
 };
 // State 3: track the sun (tracker updates its angles every 20 minutes)
@@ -465,9 +517,9 @@ bool transitionS2S3() {
     // Receive IR-remote signal
     if (!isNotOriented) { // Waiting for decoding
         changeState = true;
-        lcd.clear();
+        /*lcd.clear();
         lcd.setCursor(0, 1);
-        lcd.print("S3: Initialising GPS");
+        lcd.print("S3: Initialising GPS");*/
     }
     
     return changeState;
@@ -505,6 +557,9 @@ Arduino control
 void setup() {
     // Set Timer1
     timer1CompA_Init(TIMER1_PRESCALER,TIMER1_INTERVAL_US);
+    timer1CompB_Init(TIMER1_PRESCALER,TIMER1_INTERVAL_US);
+    timer1CompA_Off();
+    timer1CompB_Off();
 
     // Set serial monitor
     Serial.begin(9600);
@@ -513,7 +568,7 @@ void setup() {
     lcd.init();       // initialize lcd
     lcd.backlight();  // turn on backlight
     lcd.setCursor(0, 0);
-
+    
     // Set RTC-Clock
     rtc.begin();
     if (! rtc.isrunning()) {
@@ -524,16 +579,17 @@ void setup() {
     }
     // Initialize global time variable
     programTime = (DateTime)rtc.now();
-
+    programMicros = micros();
+      
     // Set LED-Pin
     pinMode(LED_PIN, OUTPUT);
     
     // Set GPS-Device
-    L76X_Init_9600();
+    //L76X_Init_9600();
 
     // Set MiniIMU
     //imu.Init();
-
+     
     // Set State-Machine, add transitions to the states
     S0->addTransition(&transitionS0S1, S1);
     S0->addTransition(&transitionS0S3, S3);
@@ -543,11 +599,13 @@ void setup() {
 
     // Set IR-Reciever
     irrecv.enableIRIn();
+
+    //xStepper.stepFunc = xStepNema17;
 }
 
 void loop() {
     machine.run();
-    Serial.print("State: ");
-    Serial.println(machine.currentState);
+    //xStepper.oneStep(dirX);
+    //delayMicroseconds(1000);
 }
 #pragma endregion

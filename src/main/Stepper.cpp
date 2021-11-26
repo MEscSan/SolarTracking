@@ -43,11 +43,37 @@ void Stepper::oneStep() {
     }
 }
 
+// Move one Step in the direction of _dir
+void Stepper::oneStep(int dir) {
+    if (_type == StepperType::NEMA17) {
+        stepNema17();
+    }
+    else{
+        step28BYJ();
+    }
+}
+
 void Stepper::step28BYJ() {
     // Define a variable, use four low bit to indicate the state of port
     static byte out = 0x01;
     // Decide the shift direction according to the rotation direction
     if (_dir) { // ring shift left
+        out != 0x08 ? out = out << 1 : out = 0x01;
+    }
+    else { // ring shift right
+        out != 0x01 ? out = out >> 1 : out = 0x08;
+    }
+    // Output singal to each port
+    for (int i = 0; i < 4; i++) {
+        digitalWrite(_stepperPins[i], (out & (0x01 << i)) ? HIGH : LOW);
+    }
+}
+
+void Stepper::step28BYJ(int dir) {
+    // Define a variable, use four low bit to indicate the state of port
+    static byte out = 0x01;
+    // Decide the shift direction according to the rotation direction
+    if (dir) { // ring shift left
         out != 0x08 ? out = out << 1 : out = 0x01;
     }
     else { // ring shift right
@@ -65,6 +91,23 @@ void Stepper::stepNema17() {
     int stepPin = _stepperPins[1];
     
     if (_dir) {
+        //Counterclockwise
+        digitalWrite(dirPin, LOW);
+    }
+    else {
+        // Clockwise
+        digitalWrite(dirPin, HIGH);
+    }
+    digitalWrite(stepPin, HIGH);
+    digitalWrite(stepPin, LOW);
+}
+
+void Stepper::stepNema17(int dir) {
+    
+    int dirPin = _stepperPins[0];
+    int stepPin = _stepperPins[1];
+    
+    if (dir) {
         //Counterclockwise
         digitalWrite(dirPin, LOW);
     }

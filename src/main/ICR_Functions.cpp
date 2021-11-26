@@ -9,7 +9,7 @@ data:
     interval  :timer interval in microseconds
     clkFrequency: processor clock frequency in MHz, default is 16 MHz (ATmega328p)
 ******************************************************************************/
-unsigned long microseconds2Clicks(int prescaler, unsigned long interval, int clkFrequency = 16){
+unsigned long microseconds2Clicks(int prescaler, unsigned long interval, int clkFrequency){
     unsigned long intervalInClicks = 0;
     intervalInClicks = (unsigned long) (interval/(prescaler /(double)clkFrequency));
     return intervalInClicks;
@@ -96,7 +96,7 @@ void timer1CompA_SetNextInterruptInterval(ISR_Flags* flags, Stepper steppers[], 
     // If all movements complete, reset timer-interval to the maximum (65500 
     if (flags->remainingSteppersFlag == 0) {
         timer1CompA_Off();
-        OCR1A = 65500; //
+        OCR1A = 65500; 
     }
 
     unsigned int minSpeedInClicks = microseconds2Clicks(prescaler,minSpeed);
