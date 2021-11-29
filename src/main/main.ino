@@ -37,7 +37,7 @@
 
 // Macros for millis() ant timeouts
 #define STATE0_TIMEOUT 30000 // 30s= 30000 ms
-#define GPS_TIMEOUT 30000  // 30s= 30000 ms
+#define GPS_TIMEOUT 90000  // 90s= 90000 ms
 #define TRACKER_DELAY 30000 // 30s= 30000 ms
 #define MILLIS_30_SECONDS 30000 // 30s= 30000 ms
 #define MILLIS_20_MINUTES 1200000 // 20min=1200000 ms
@@ -266,6 +266,9 @@ void state1_InitLeveling() {
 };
 // State 2: initalisation, set mirror/solar-panel to the north
 void state2_InitNorth() {
+
+    //Stop GPS to avoid interference with motor communication
+    L76X_Stop(); 
     
     if(machine.executeOnce){
       isNotOriented = true;
@@ -276,16 +279,15 @@ void state2_InitNorth() {
       lcd.print("Norden richten");  
       dirX = -1;
       dirY = -1;
-      timer1CompB_On();
+      //timer1CompB_On();
     }
-    
 
-    if(isNotOriented){
+    while(isNotOriented){
       if (irrecv.decode(&results)) { // Waiting for decoding
         // Print out the decoded results
         irrecv.resume(); // Receive the next value
       }
-      /*
+      
       switch (results.value) {
         case IR_REMOTE_2:    
             dirY = 0;   // Y+
@@ -313,7 +315,7 @@ void state2_InitNorth() {
             lcd.clear();
             lcd.print("S2: Stop  ");
             break;
-        case IR_REMOTE_0:
+        case IR_REMOTE_1:
              isNotOriented = false;
              lcd.clear();
              lcd.print("S2: North found!");
@@ -321,7 +323,20 @@ void state2_InitNorth() {
         default: // Any other button pressed (except for 0, which changes State)
             // Do nothing
             break;
-        }*/
+      }
+
+      if(dirX >= 0){
+        xStepper.oneStep(dirX);
+      }
+      if(dirY >= 0){
+         yStepper.oneStep(dirY);
+      }
+      Serial.println(millis() - programMillis);
+      programMillis = millis();
+      /*else {
+          timer1CompB_Off();
+      }*/
+      delayMicroseconds(MICROSECONDS_PER_STEP);
     }
     
 
@@ -330,6 +345,8 @@ void state2_InitNorth() {
 void state3_SolarTrack() {
 
     if(machine.executeOnce) {
+        // Set GPS-Device
+        L76X_Init_9600();
         
         // Get coordinates from GPS
         int gpsTimeout = 1;// minute
@@ -358,7 +375,7 @@ void state3_SolarTrack() {
 
         // Wait until GPS-Sensor delivers realistic values or timeout is over
         while(gps.Status == 0 || gps.Lat == 0.00 || gps.Lon == 0.00) {
-            //gps = L76X_Gat_GNRMC();
+            gps = L76X_Gat_GNRMC();
 
             lcdPrintGPS(lcd, gps, 1);
 
@@ -406,6 +423,9 @@ void state3_SolarTrack() {
         trackerPosition.Zenith = 0;
 
         isInStartPosition = true; 
+        
+        //Stop GPS to avoid interference with motor communication
+        L76X_Stop(); 
     }
 
     /*imu.Update_IMU_Values();
@@ -415,8 +435,8 @@ void state3_SolarTrack() {
 
     sunPosition = SolarCalculator::getSolarPosition(programTime, coords);
     lcd.clear();
-    lcdPrintSolarPosition(lcd, sunPosition, 0);
-    lcdPrintSolarPosition(lcd, trackerPosition,1);
+    lcdPrintGPS(lcd, gps, 0);
+    lcdPrintSolarPosition(lcd, sunPosition, 1);
 
     // azimuth  angle-difference between sun and tracker
     double dAzimuth = sunPosition.Azimuth - trackerPosition.Azimuth;
@@ -585,7 +605,7 @@ void setup() {
     pinMode(LED_PIN, OUTPUT);
     
     // Set GPS-Device
-    //L76X_Init_9600();
+    L76X_Init_9600();
 
     // Set MiniIMU
     //imu.Init();

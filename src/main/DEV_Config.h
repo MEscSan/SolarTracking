@@ -36,7 +36,8 @@ UBYTE DEV_Uart_ReceiveByte(void);
 void DEV_Uart_SendByte(char data);
 void DEV_Uart_SendString(char *data);
 void DEV_Uart_ReceiveString(char *data, UWORD Num);
-
+void DEV_Start_Listening(UDOUBLE Baudrate);
+void DEV_Stop_Listening();
 void DEV_Set_Baudrate(UDOUBLE Baudrate);
 
 void DEV_Set_GPIOMode(UWORD Pin, UWORD mode);

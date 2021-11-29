@@ -93,6 +93,10 @@ void L76X_Init_9600() {
     L76X_Send_Command(SET_NMEA_OUTPUT);
 }
 
+void L76X_Stop(){
+  DEV_Stop_Listening();  
+}
+
 /******************************************************************************
 function:	
 	Send a command to the L76X，Automatic calculation of the code
