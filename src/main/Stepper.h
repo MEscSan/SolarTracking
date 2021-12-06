@@ -60,6 +60,7 @@ class Stepper {
             
         // Public Methods
         void oneStep();
+        void oneStep(int dir);
         void resetStepperInfo();
         void resetStepperMovement();
         void prepareMovement(int angleRequested, ISR_Flags *flags);
@@ -97,7 +98,9 @@ class Stepper {
 
         //Private methods
         void step28BYJ();
+        void step28BYJ(int dir);
         void stepNema17();
+        void stepNema17(int dir);
         int angle2Steps(int motorAngle);
         int steps2Angle(long motorSteps);
 
