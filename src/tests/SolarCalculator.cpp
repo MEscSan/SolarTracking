@@ -120,7 +120,7 @@ double SolarCalculator::elevationAngle(double elevationAnglePrecalculation) {
   return elevationAngle;
 }
 
-// Convert from elevationAngle to Motor-Angle, needed for elevation-angle-Tracking
+// Convert from elevationAngle to Motor-Angle, needed for Zenith-Tracking
 /*******************************************************************
 Conditions:
 -> threaded bar with thread-pitch 1.25
@@ -195,7 +195,7 @@ void SolarCalculator::printAstroCoordinates(AstronomicalCoordinate a) {
 void SolarCalculator::printSolarPosition(SolarPosition s) {
 
   Serial.print("\t");
-  Serial.print(s.ElevationAngle);
+  Serial.print(s.Zenith);
   Serial.print("\t");
   Serial.print(s.Azimuth);
 }
@@ -217,9 +217,9 @@ SolarPosition SolarCalculator::getSolarPosition(DateTime dt, GeographicalCoordin
   a.EqTime = equationOfTime(dayInYear);
   a.Decline = decline(dayInYear);
   a.HourAngle = hourAngle(g.Longitude, a.EqTime, currentHour, currentMinute );
-  s.ElevationAnglePrecalculation = elevationAnglePrecalculation(g.Latitude, a);
-  s.ElevationAngle = elevationAngle(s.ElevationAnglePrecalculation);
-  s.Azimuth = azimuth(s.ElevationAnglePrecalculation, g, a, dt);
+  s.ZenithPrecalculation = elevationAnglePrecalculation(g.Latitude, a);
+  s.Zenith = elevationAngle(s.ZenithPrecalculation);
+  s.Azimuth = azimuth(s.ZenithPrecalculation, g, a, dt);
 
   return s; 
 }

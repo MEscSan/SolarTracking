@@ -7,6 +7,7 @@
         "${projectRoot}..\\main",
         "C:\\Users\\ct461\\OneDrive\\Documents\\Arduino\\libraries\\LiquidCrystal_I2C",
         "D:\\Program Files (x86)\\Arduino\\hardware\\arduino\\avr\\libraries\\SoftwareSerial\\src",
+        "C:\\Users\\ct461\\OneDrive\\Documents\\Arduino\\libraries\\StateMachine-master\\src",
         "C:\\Users\\ct461\\OneDrive\\Documents\\Arduino\\libraries\\IRremote\\src",
         "D:\\Program Files (x86)\\Arduino\\hardware\\arduino\\avr\\libraries\\EEPROM\\src",
         "C:\\Users\\ct461\\OneDrive\\Documents\\Arduino\\libraries\\RTClib\\src",

@@ -46,8 +46,8 @@ typedef struct GeographicalCoordinate {
 
 typedef struct SolarPosition {
 	double Azimuth;
-	double ElevationAnglePrecalculation;
-	double ElevationAngle;
+	double ZenithPrecalculation;
+	double Zenith;
 };
 
 class SolarCalculator {

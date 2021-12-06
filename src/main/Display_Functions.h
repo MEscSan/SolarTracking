@@ -14,7 +14,7 @@
 #include "MiniIMU.h"
 
 void lcdPrintGPS(LiquidCrystal_I2C lcd, GNRMC gps, int row = 1);
-void lcdPrintTime(LiquidCrystal_I2C lcd, RTC_DS1307 rtc, int row = 0);
+void lcdPrintTime(LiquidCrystal_I2C lcd, RTC_DS3231 rtc, int row = 0);
 void lcdPrintSolarPosition(LiquidCrystal_I2C lcd, SolarPosition s, int row = 1);
 void lcdPrintCompassHeading(LiquidCrystal_I2C lcd, MiniIMU imu, int row = 0);
 

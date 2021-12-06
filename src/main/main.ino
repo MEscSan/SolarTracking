@@ -20,12 +20,22 @@
 #define DIR_Y_PIN 6     // Nema 17 Y-Direction
 #define STEP_Y_PIN 3    // Nema 17 Y-Step
 #define LED_PIN 13
+<<<<<<< HEAD
 #define MICROSECONDS_PER_STEP 900
 #define MICROSECONDS_PER_STEP_X 900
 #define MICROSECONDS_PER_STEP_Y 900
 #define GEAR_RATIO 5 // Input speed / Output speed : Ratio > 1 => gear slows movement down 
 #define GEAR_RATIO_X 19.2 
 #define GEAR_RATIO_Y 19.2 
+=======
+#define MICROSECONDS_PER_STEP 1000
+#define MICROSECONDS_PER_STEP_X 1000
+#define MICROSECONDS_PER_STEP_Y 1000
+#define GEAR_RATIO 5 // Input speed / Output speed : Ratio > 1 => gear slows movement down 
+#define GEAR_RATIO_X 19.2 
+#define GEAR_RATIO_Y 19.2 
+#define GEAR_RATIO_WORM_DRIVE 50
+>>>>>>> df74c9d4a3bbb98b30378b0433a170822f025532
 #define NUM_STEPPERS 2
 #define STEPS_PER_REVOLUTION_NEMA17 200
 #define STEPS_PER_REVOLUTION_28BYJ 2048
@@ -37,8 +47,8 @@
 
 // Macros for millis() ant timeouts
 #define STATE0_TIMEOUT 30000 // 30s= 30000 ms
-#define GPS_TIMEOUT 30000  // 30s= 30000 ms
-#define TRACKER_DELAY 30000 // 30s= 30000 ms
+#define GPS_TIMEOUT 30000  // 90s= 90000 ms
+#define TRACKER_DELAY 100 // 30s= 30000 ms
 #define MILLIS_30_SECONDS 30000 // 30s= 30000 ms
 #define MILLIS_20_MINUTES 1200000 // 20min=1200000 ms
 
@@ -62,6 +72,10 @@ Global variables
 ******************************************************************************/
 //For Nema17
 int dirX = -1;
+<<<<<<< HEAD
+=======
+volatile int timerCount = 0;
+>>>>>>> df74c9d4a3bbb98b30378b0433a170822f025532
 int dirY = -1;
 int xStepperPins[2] = { DIR_X_PIN, STEP_X_PIN };
 int yStepperPins[2] = { DIR_Y_PIN, STEP_Y_PIN };
@@ -84,10 +98,10 @@ ISR_Flags flags;
 //****Object Instances****
 // Hardware
 LiquidCrystal_I2C lcd(0x27, 16, 2); //Instantiate and initialize LCD-Display, set the I2C Address to 0x27 for the LCD (16 chars and 2 line Display)
-RTC_DS1307 rtc;
+RTC_DS3231 rtc;
 GNRMC gps;
 MiniIMU imu;//, DeviceVersion::V4,AxisDefinition::Y_right_Z_Down, true);
-Stepper xStepper(xStepperPins, GEAR_RATIO_X, 0, STEPPER_TYPE, MICROSECONDS_PER_STEP_X, STEPS_PER_REVOLUTION_NEMA17);
+Stepper xStepper(xStepperPins, GEAR_RATIO_X*GEAR_RATIO_WORM_DRIVE, 0, STEPPER_TYPE, MICROSECONDS_PER_STEP_X, STEPS_PER_REVOLUTION_NEMA17);
 Stepper yStepper(yStepperPins, GEAR_RATIO_Y, 1, STEPPER_TYPE, MICROSECONDS_PER_STEP_Y, STEPS_PER_REVOLUTION_NEMA17);
 IRrecv irrecv(RECV_PIN); // Create a class object used to receive IR-remote control commands
 decode_results results; // Create a decoding results class object for IR-Remote
@@ -116,8 +130,12 @@ void runAndWait() {
     flags.nextStepperFlag = 0;
 }
 
-
 ISR(TIMER1_COMPA_vect) {
+<<<<<<< HEAD
+=======
+
+ 
+>>>>>>> df74c9d4a3bbb98b30378b0433a170822f025532
     unsigned int tmpCtr = OCR1A;
     OCR1A = 65500;
     for (int i = 0; i < NUM_STEPPERS; i++) {
@@ -137,6 +155,8 @@ ISR(TIMER1_COMPA_vect) {
         // Get remaining motor
         //Serial.println(i);
         volatile Stepper& s = steppers[i];
+        // Serial.print("Requested Steps");
+        //Serial.println(s.getTotalStepsRequested());
         volatile unsigned int stepsRequested = s.getTotalStepsRequested();
         
         // Run one step in the motor
@@ -163,6 +183,55 @@ ISR(TIMER1_COMPA_vect) {
 
     TCNT1 = 0;
 }
+
+ISR(TIMER1_COMPB_vect){   
+      /*  
+      switch (results.value) {
+        case IR_REMOTE_2:    
+            dirY = 0;   // Y+
+            Serial.println("S2: Y+  ");
+            break;
+        case IR_REMOTE_8:  
+            dirY = 1;  // Y-
+            Serial.println("S2: Y-  ");
+            break;
+        case IR_REMOTE_4:  
+            dirX = 0;  // X+
+            Serial.println("S2: X+  ");
+            break;
+        case IR_REMOTE_6:
+            dirX = 1;    // X-
+            Serial.println("S2: X-  ");
+            break;
+        case IR_REMOTE_5: 
+            dirX = -1;   // Stop both motors
+            dirY = -1;
+            Serial.println("S2: Stop  ");
+            break;
+        case IR_REMOTE_1:
+             isNotOriented = false;
+             Serial.println("S2: North found!");
+             break;
+        default: // Any other button pressed (except for 0, which changes State)
+            // Do nothing
+            break;
+        }
+      */
+      //if(dirX >= 0){
+      xStepper.oneStep(1);
+      //}
+      //if(diY >)
+     if(timerCount<4000){
+      timerCount++;
+      }
+     else{
+      timer1CompB_Off();
+      }
+     OCR1B = microseconds2Clicks(TIMER1_PRESCALER,900);
+     Serial.println(micros());
+     TCNT1  = 0;
+}
+
 #pragma endregion
 
 #pragma region State machine
@@ -184,20 +253,28 @@ void state0_TurnOn(){
 
     // Receive IR-remote signal
     if (irrecv.decode(&results)) { // Waiting for decoding
-       switch (results.value) {
-        case IR_REMOTE_0:    
-            isReadyForLeveling = true;
-            break;
-        case IR_REMOTE_3:
-             isInStartPosition = true;
-             break;
-        default: // Any other button pressed (except for 0, which changes State)
-            // Do nothing
-            break;
-      }
+       irrecv.resume(); // Receive the next value
     }
-    irrecv.resume(); // Receive the next value
 
+     switch (results.value) {
+      case IR_REMOTE_0:    
+          isReadyForLeveling = true;
+          
+          break;
+      case IR_REMOTE_3:
+           isInStartPosition = true;
+           break;
+      default: // Any other button pressed (except for 0, which changes State)
+          // Do nothing
+          break;
+    }
+
+
+    // Change to state  after 30s
+    if((millis()-programMillis) > 30000){
+      programMillis = millis();
+      isReadyForLeveling = true;  
+    }
 }
 // State 1: initalisation, adjust tripod
 void state1_InitLeveling() {
@@ -208,6 +285,9 @@ void state1_InitLeveling() {
 };
 // State 2: initalisation, set mirror/solar-panel to the north
 void state2_InitNorth() {
+
+    //Stop GPS to avoid interference with motor communication
+    L76X_Stop(); 
     
     if(machine.executeOnce){
       isNotOriented = true;
@@ -218,13 +298,19 @@ void state2_InitNorth() {
       lcd.print("Norden richten");  
       dirX = -1;
       dirY = -1;
+<<<<<<< HEAD
     }
     
+=======
+      //timer1CompB_On();
+    }
+>>>>>>> df74c9d4a3bbb98b30378b0433a170822f025532
 
     while(isNotOriented){
       if (irrecv.decode(&results)) { // Waiting for decoding
         // Print out the decoded results
 
+<<<<<<< HEAD
       switch (results.value) {
         case IR_REMOTE_2:    
             dirY = 0;   // Y+
@@ -276,20 +362,82 @@ void state2_InitNorth() {
       }
 
       delayMicroseconds(900);
+=======
+         switch (results.value) {
+          case IR_REMOTE_2:    
+              dirY = 0;   // Y+
+              lcd.clear();
+              lcd.print("S2: Y+  ");
+              break;
+          case IR_REMOTE_8:  
+              dirY = 1;  // Y-
+              lcd.clear();
+              lcd.print("S2: Y-  ");
+              break;
+          case IR_REMOTE_4:  
+              dirX = 0;  // X+
+              lcd.clear();
+              lcd.print("S2: X+  ");
+              break;
+          case IR_REMOTE_6:
+              dirX = 1;    // X-
+              lcd.clear();
+              lcd.print("S2: X-  ");
+              break;
+          case IR_REMOTE_5: 
+              dirX = -1;   // Stop both motors
+              dirY = -1;
+              lcd.clear();
+              lcd.print("S2: Stop  ");
+              break;
+          case IR_REMOTE_1:
+               isNotOriented = false;
+               lcd.clear();
+               lcd.print("S2: North found!");
+               break;
+          default: // Any other button pressed (except for 0, which changes State)
+              // Do nothing
+              break;
+        }
+        if(dirX >= 0){
+          steppers[0].setDirection(dirX);
+          //steppers[0].oneStep();
+        }
+        if(dirY >= 0){
+           steppers[1].setDirection(dirY);
+           //steppers[1].oneStep(dirY);
+        }
+        irrecv.resume(); // Receive the next value
+      }
+      
+      if(dirX >= 0){
+          steppers[0].oneStep();
+        }
+      if(dirY >= 0){
+           steppers[1].oneStep();
+      }
+
+      delayMicroseconds(MICROSECONDS_PER_STEP);
+      //Serial.println(micros() - programMicros);
+      //programMicros = micros();
+>>>>>>> df74c9d4a3bbb98b30378b0433a170822f025532
     }
+    
 
 };
 // State 3: track the sun (tracker updates its angles every 20 minutes)
 void state3_SolarTrack() {
 
     if(machine.executeOnce) {
+        // Set GPS-Device
+        L76X_Init_9600();
         
         // Get coordinates from GPS
         int gpsTimeout = 1;// minute
         programMillis = millis();
         
         lcd.setCursor(0, 0);
-        lcd.print("S3: Searching GPS");
+        lcd.print("S3:Searching GPS");
         gps = L76X_Gat_GNRMC();
         Serial.print("\r\n");
         Serial.print("Time:");
@@ -311,7 +459,7 @@ void state3_SolarTrack() {
 
         // Wait until GPS-Sensor delivers realistic values or timeout is over
         while(gps.Status == 0 || gps.Lat == 0.00 || gps.Lon == 0.00) {
-            //gps = L76X_Gat_GNRMC();
+            gps = L76X_Gat_GNRMC();
 
             lcdPrintGPS(lcd, gps, 1);
 
@@ -344,7 +492,7 @@ void state3_SolarTrack() {
                 lcd.setCursor(0, 0);
                 lcd.print("GPS Error        ");
                 lcd.setCursor(0, 1);
-                lcd.print("Default: Chemnitz");
+                lcd.print("Default:Chemnitz");
 
                 // Wait for 5s
                 delay(5000);
@@ -356,9 +504,12 @@ void state3_SolarTrack() {
 
         // Assume tracker in start position
         trackerPosition.Azimuth = 0;
-        trackerPosition.Zenith = 0;
+        trackerPosition.ElevationAngle = 0;
 
         isInStartPosition = true; 
+        
+        //Stop GPS to avoid interference with motor communication
+        L76X_Stop(); 
     }
 
     /*imu.Update_IMU_Values();
@@ -368,54 +519,75 @@ void state3_SolarTrack() {
 
     sunPosition = SolarCalculator::getSolarPosition(programTime, coords);
     lcd.clear();
-    lcdPrintSolarPosition(lcd, sunPosition, 0);
-    lcdPrintSolarPosition(lcd, trackerPosition,1);
+    lcdPrintGPS(lcd, gps, 0);
+    lcdPrintSolarPosition(lcd, sunPosition, 1);
 
     // azimuth  angle-difference between sun and tracker
     double dAzimuth = sunPosition.Azimuth - trackerPosition.Azimuth;
-    // rotate x-Stepper
-    xStepper.prepareMovement(dAzimuth, &flags);
-    runAndWait();
+    if(dAzimuth >3){
+      // rotate x-Stepper
+      steppers[0].prepareMovement(dAzimuth, &flags);
+      //Serial.println(steppers[0].getTotalStepsRequested());
+      //Serial.println(dAzimuth);
+      Serial.println("Motor X");
+      runAndWait();
+      
+      // Update tracker-position
+      trackerPosition.Azimuth += dAzimuth;
+    }
 
-    // zenith  angle-difference between sun and tracker
 
-    double zenithOld = trackerPosition.Zenith;
-    double zenithNew = sunPosition.Zenith;
-    double dZenith = zenithNew - zenithOld;
-    // translate zenith difference to motor-rotations
-    double dZenithMotor = SolarCalculator::zenithChange2MotorAngle(zenithOld, zenithNew);
-    // rotate y-Stepper
-    yStepper.prepareMovement(dZenithMotor, &flags);
-    runAndWait();
+    // Elevation Angle  angle-difference between sun and tracker
 
-    // Update tracker-position
-    trackerPosition.Azimuth += dAzimuth;
-    trackerPosition.Zenith += dZenith;
+    double elevationAngleOld = trackerPosition.ElevationAngle;
+    double elevationAngleNew = sunPosition.ElevationAngle;
+    double dElevationAngle = elevationAngleNew - elevationAngleOld;
+
+    if(dElevationAngle >1){
+      // translate elevation angle difference to motor-rotations
+      double dElevationAngleMotor = SolarCalculator::elevationAngleChange2MotorAngle(elevationAngleOld, elevationAngleNew);
+      //Serial.println(dElevationAngleMotor);
+      // rotate y-Stepper
+      steppers[1].prepareMovement(dElevationAngleMotor, &flags);
+      //Serial.println(steppers[1].getTotalStepsRequested());
+      Serial.println("Motor Y");
+      runAndWait();
+      Serial.println("Movement finished");
+      trackerPosition.ElevationAngle += dElevationAngle;
+    }
+   
+
     isInStartPosition = false;
-    lcdPrintSolarPosition(lcd, trackerPosition, 1);
+    //lcdPrintSolarPosition(lcd, trackerPosition, 1);
 
+    programTime = rtc.now();
     // Wait for 
-    delay(TRACKER_DELAY);
+    //delay(TRACKER_DELAY);
 };
-// State 4: move the tracker back to start position (Azimuth 0, Zenith 0)
+// State 4: move the tracker back to start position (Azimuth 0, elevation angle 0)
 void state4_Return2Start() {
 
-    // Turn motors back to start-position (Azimuth 0, Zenith 0)
+    lcd.clear();
+    lcdPrintTime(lcd, rtc, 0);
+    lcd.setCursor(0, 1);
+    lcd.print("S74: Reseting...");
+        
+    // Turn motors back to start-position (Azimuth 0, elevation angle 0)
     // azimuth  angle-difference between sun and tracker
     double dAzimuth = 0 - trackerPosition.Azimuth;
     // rotate x-Stepper
     xStepper.prepareMovement(dAzimuth, &flags);
     runAndWait();
 
-    // zenith  angle-difference between sun and tracker
-    double dZenith = 0 - trackerPosition.Zenith;
+    // elevation angle-difference between sun and tracker
+    double dElevationAngle = 0 - trackerPosition.ElevationAngle;
     // rotate y-Stepper
-    yStepper.prepareMovement(dZenith, &flags);
+    yStepper.prepareMovement(dElevationAngle, &flags);
     runAndWait();
 
     // Update tracker-position
     trackerPosition.Azimuth = 0;
-    trackerPosition.Zenith = 0;
+    trackerPosition.ElevationAngle = 0;
 
     isInStartPosition = true;
 };
@@ -435,6 +607,7 @@ bool transitionS0S1(){
     
     if(isReadyForLeveling){
       changeState = true;  
+      lcd.clear();
     }
     
 
@@ -445,7 +618,8 @@ bool transitionS0S3() {
     bool changeState = false;
 
     if(isInStartPosition){
-      changeState = true;  
+      changeState = true;
+      lcd.clear();  
     }
     
     return changeState;
@@ -458,6 +632,7 @@ bool transitionS1S2(){
 
         if (results.value == IR_REMOTE_0) {
             changeState = true;
+            lcd.clear();
         }
         irrecv.resume(); // Receive the next value
     }
@@ -470,6 +645,10 @@ bool transitionS2S3() {
     // Receive IR-remote signal
     if (!isNotOriented) { // Waiting for decoding
         changeState = true;
+<<<<<<< HEAD
+=======
+        lcd.clear();
+>>>>>>> df74c9d4a3bbb98b30378b0433a170822f025532
         /*lcd.clear();
         lcd.setCursor(0, 1);
         lcd.print("S3: Initialising GPS");*/
@@ -480,11 +659,13 @@ bool transitionS2S3() {
 // Change from state 3 to state 4 if button 0 is pressed
 bool transitionS3S4() {
     bool changeState = false;
+    Serial.println("Transition 3->4");
     // Receive IR-remote signal
     if (irrecv.decode(&results)) { // Waiting for decoding
 
         if (results.value == IR_REMOTE_0) {
             changeState = true;
+            lcd.clear();
         }
         irrecv.resume(); // Receive the next value
     }
@@ -509,19 +690,25 @@ Arduino control
 ******************************************************************************/
 void setup() {
     // Set Timer1
+<<<<<<< HEAD
     //timer1CompA_Init(TIMER1_PRESCALER,TIMER1_INTERVAL_US);
+=======
+    timer1CompA_Init(TIMER1_PRESCALER,TIMER1_INTERVAL_US);
+    timer1CompB_Init(TIMER1_PRESCALER,TIMER1_INTERVAL_US);
+    timer1CompA_Off();
+    timer1CompB_Off();
+>>>>>>> df74c9d4a3bbb98b30378b0433a170822f025532
 
     // Set serial monitor
     Serial.begin(9600);
-    
     // Set LCD-Display 
     lcd.init();       // initialize lcd
     lcd.backlight();  // turn on backlight
     lcd.setCursor(0, 0);
-
+    
     // Set RTC-Clock
     rtc.begin();
-    if (! rtc.isrunning()) {
+    if (rtc.lostPower()) {
       Serial.println("RTC is NOT running, let's set the time!");
       // When time needs to be set on a new device, or after a power loss, the
       // following line sets the RTC to the date & time this sketch was compiled
@@ -530,7 +717,11 @@ void setup() {
     // Initialize global time variable
     programTime = (DateTime)rtc.now();
     programMicros = micros();
+<<<<<<< HEAD
 
+=======
+      
+>>>>>>> df74c9d4a3bbb98b30378b0433a170822f025532
     // Set LED-Pin
     pinMode(LED_PIN, OUTPUT);
     
@@ -539,19 +730,23 @@ void setup() {
 
     // Set MiniIMU
     //imu.Init();
-
+     
     // Set State-Machine, add transitions to the states
     S0->addTransition(&transitionS0S1, S1);
     S0->addTransition(&transitionS0S3, S3);
     S1->addTransition(&transitionS1S2, S2);
     S2->addTransition(&transitionS2S3, S3);
     S3->addTransition(&transitionS3S4, S4);
+    S4->addTransition(&transitionS4S1, S1);
 
     // Set IR-Reciever
     irrecv.enableIRIn();
+
+    //xStepper.stepFunc = xStepNema17;
 }
 
 void loop() {
+<<<<<<< HEAD
     //machine.run();
     isNotOriented = true;
     if(micros()> programMicros + 1500){
@@ -607,5 +802,10 @@ void loop() {
       }
       programMicros = micros();
     }
+=======
+    machine.run();
+    //xStepper.oneStep(dirX);
+    //delayMicroseconds(1000);
+>>>>>>> df74c9d4a3bbb98b30378b0433a170822f025532
 }
 #pragma endregion

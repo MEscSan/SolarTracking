@@ -1,25 +1,36 @@
 #pragma once
 #include "Display_Functions.h"
 
-void lcdPrintGPS(LiquidCrystal_I2C lcd, GNRMC gps, int row){
+void lcdPrintCoords(LiquidCrystal_I2C lcd, GeographicalCoordinate coords, int row = 1){
 
-	if(gps.Status != 1) {
-    lcd.setCursor(0, row);
-		lcd.print("GPS unavaliable");
-	}
-	else{
   	lcd.setCursor(0, row);
   	lcd.print("Lat");
-  	lcd.print(gps.Lat);
+  	lcd.print(coords.Latitude);
   	lcd.print(" ");
   	lcd.print("Lon");
-  	lcd.print(gps.Lon);
+  	lcd.print(coords.Longitude);
   	lcd.print(":");
-	}
+}
+
+void lcdPrintGPS(LiquidCrystal_I2C lcd, GNRMC gps, int row){
+
+  if(gps.Status != 1) {
+    lcd.setCursor(0, row);
+    lcd.print("GPS unavaliable");
+  }
+  else{
+    lcd.setCursor(0, row);
+    lcd.print("Lat");
+    lcd.print(gps.Lat);
+    lcd.print(" ");
+    lcd.print("Lon");
+    lcd.print(gps.Lon);
+    lcd.print(":");
+  }
 
 }
 
-void lcdPrintTime(LiquidCrystal_I2C lcd, RTC_DS1307 rtc, int row){
+void lcdPrintTime(LiquidCrystal_I2C lcd, RTC_DS3231 rtc, int row){
 	DateTime now = rtc.now();
 	lcd.setCursor(0, row);
 	lcd.print(now.day(), DEC);
@@ -40,8 +51,8 @@ void lcdPrintSolarPosition(LiquidCrystal_I2C lcd, SolarPosition s, int row){
 	lcd.print("A");
 	lcd.print(s.Azimuth);
 	lcd.print(" ");
-	lcd.print("Z");
-	lcd.print(s.Zenith);
+	lcd.print("E");
+	lcd.print(s.ElevationAngle);
 	lcd.print(" ");
 }
 

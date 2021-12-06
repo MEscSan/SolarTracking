@@ -107,3 +107,26 @@ void DEV_Set_Baudrate(UDOUBLE Baudrate)
 {
   mySerial.begin(Baudrate);
 }
+
+void DEV_Stop_Listening()
+{
+  mySerial.end();
+  if (mySerial.isListening()) {
+   Serial.println("SoftwareSerial is still listening!");
+  }
+  else{
+    Serial.println("SoftwareSerial is no longer listening!");
+  }
+}
+
+
+void DEV_Start_Listening(UDOUBLE Baudrate)
+{
+  mySerial.begin(9600);
+  if (mySerial.isListening()) {
+   Serial.println("SoftwareSerial started listening!");
+  }
+  else{
+    Serial.println("SoftwareSerial did not start listening!");
+  }
+}
