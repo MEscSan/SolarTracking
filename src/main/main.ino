@@ -26,6 +26,7 @@
 #define GEAR_RATIO 5 // Input speed / Output speed : Ratio > 1 => gear slows movement down 
 #define GEAR_RATIO_X 19.2 
 #define GEAR_RATIO_Y 19.2 
+#define GEAR_RATIO_WORM_DRIVE 50
 #define NUM_STEPPERS 2
 #define STEPS_PER_REVOLUTION_NEMA17 200
 #define STEPS_PER_REVOLUTION_28BYJ 2048
@@ -88,7 +89,7 @@ LiquidCrystal_I2C lcd(0x27, 16, 2); //Instantiate and initialize LCD-Display, se
 RTC_DS3231 rtc;
 GNRMC gps;
 MiniIMU imu;//, DeviceVersion::V4,AxisDefinition::Y_right_Z_Down, true);
-Stepper xStepper(xStepperPins, GEAR_RATIO_X, 0, STEPPER_TYPE, MICROSECONDS_PER_STEP_X, STEPS_PER_REVOLUTION_NEMA17);
+Stepper xStepper(xStepperPins, GEAR_RATIO_X*GEAR_RATIO_WORM_DRIVE, 0, STEPPER_TYPE, MICROSECONDS_PER_STEP_X, STEPS_PER_REVOLUTION_NEMA17);
 Stepper yStepper(yStepperPins, GEAR_RATIO_Y, 1, STEPPER_TYPE, MICROSECONDS_PER_STEP_Y, STEPS_PER_REVOLUTION_NEMA17);
 IRrecv irrecv(RECV_PIN); // Create a class object used to receive IR-remote control commands
 decode_results results; // Create a decoding results class object for IR-Remote
