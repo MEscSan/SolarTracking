@@ -13,6 +13,7 @@
 #include "L76X.h"
 #include "MiniIMU.h"
 
+void lcdPrintCoords(LiquidCrystal_I2C lcd, GeographicalCoordinate coords, int row = 1);
 void lcdPrintGPS(LiquidCrystal_I2C lcd, GNRMC gps, int row = 1);
 void lcdPrintTime(LiquidCrystal_I2C lcd, RTC_DS3231 rtc, int row = 0);
 void lcdPrintSolarPosition(LiquidCrystal_I2C lcd, SolarPosition s, int row = 1);

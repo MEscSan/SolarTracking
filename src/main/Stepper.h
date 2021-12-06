@@ -63,7 +63,7 @@ class Stepper {
         void oneStep(int dir);
         void resetStepperInfo();
         void resetStepperMovement();
-        void prepareMovement(int angleRequested, ISR_Flags *flags);
+        void prepareMovement(double angleRequested, ISR_Flags *flags);
 
         // Getter- and Setter
         volatile bool getMovementDone();
@@ -101,13 +101,10 @@ class Stepper {
         void step28BYJ(int dir);
         void stepNema17();
         void stepNema17(int dir);
-<<<<<<< HEAD
         int angle2Steps(int motorAngle);
         int steps2Angle(long motorSteps);
-=======
         unsigned long angle2Steps(double motorAngle);
         double steps2Angle(unsigned long motorSteps);
->>>>>>> df74c9d4a3bbb98b30378b0433a170822f025532
 
         // Motor set-up (Member of variable length)
         volatile int _stepperPins[4];                  // Int-Array with the Pins of the stepper: 
