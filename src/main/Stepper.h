@@ -64,6 +64,7 @@ class Stepper {
         void resetStepperInfo();
         void resetStepperMovement();
         void prepareMovement(double angleRequested, ISR_Flags *flags);
+        void prepareMovementSteps(unsigned long stepsRequested, int dir,  ISR_Flags *flags);
 
         // Getter- and Setter
         volatile bool getMovementDone();

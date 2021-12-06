@@ -133,10 +133,18 @@ void Stepper::resetStepperMovement() {
     _movementDone = false;
 }
 
-// Prepare the next motor-movement of the selected motor (reset info from previous movement, set new requested number of steps)
+// Prepare the next motor-movement of the selected motor for a given angle (reset info from previous movement, set new requested number of steps)
 void Stepper::prepareMovement(double angleRequested, ISR_Flags *flags) {
     unsigned long stepsRequested = angle2Steps(angleRequested);
     _dir = stepsRequested > 0 ? 0 : 1;
+    _totalStepsRequested = abs(stepsRequested);
+    resetStepperMovement();
+    flags->remainingSteppersFlag |= (1 << _motorId); // "Add" motor to byte-flag
+}
+
+// Prepare the next motor-movement of the selected motor for a given number of steps (reset info from previous movement, set new requested number of steps)
+void Stepper::prepareMovementSteps(unsigned long stepsRequested, int dir, ISR_Flags *flags) {
+    _dir = dir > 0 ? 0 : 1;
     _totalStepsRequested = abs(stepsRequested);
     resetStepperMovement();
     flags->remainingSteppersFlag |= (1 << _motorId); // "Add" motor to byte-flag

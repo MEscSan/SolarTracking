@@ -82,8 +82,10 @@ bool isLeveled = false;
 //bool isRightTime = false;
 bool isReadyForLeveling = false;
 bool isNotOriented = true;
-unsigned long programMillis;
-unsigned long programMicros; 
+unsigned long programMillis = 0;
+unsigned long programMicros = 0; 
+unsigned long azimuthSteps = 0;
+unsigned long elevationSteps = 0;
 DateTime programTime;
 SolarPosition sunPosition;
 SolarPosition trackerPosition;
@@ -219,7 +221,7 @@ ISR(TIMER1_COMPB_vect){
         }
       */
       //if(dirX >= 0){
-      xStepper.oneStep(1);
+      steppers[0].oneStep(1);
       //}
       //if(diY >)
      if(timerCount<4000){
@@ -380,6 +382,8 @@ void state3_SolarTrack() {
         int gpsTimeout = 1;// minute
         programMillis = millis();
         isFirstRun = true;
+        azimuthSteps = 0;
+        elevationSteps = 0;
         
         lcd.setCursor(0, 0);
         lcd.print("S3:Searching GPS");
@@ -478,6 +482,8 @@ void state3_SolarTrack() {
       
       // rotate x-Stepper
       steppers[0].prepareMovement(dAzimuth, &flags);
+      azimuthSteps += steppers[0].getTotalStepsRequested();
+            
       Serial.println("Motor X");
       lcd.setCursor(0,1);
       lcd.print("Azimuth  :");
@@ -496,6 +502,7 @@ void state3_SolarTrack() {
       
       // rotate y-Stepper
       steppers[1].prepareMovement(dElevationAngleMotor, &flags);
+      elevationSteps += steppers[1].getTotalStepsRequested();
       
       Serial.println("Motor Y");
       lcd.setCursor(0,1);
@@ -521,15 +528,23 @@ void state4_Return2Start() {
         
     // Turn motors back to start-position (Azimuth 0, elevation angle 0)
     // azimuth  angle-difference between sun and tracker
-    double dAzimuth = 0 - trackerPosition.Azimuth;
+    //double dAzimuth = 0 - trackerPosition.Azimuth;
     // rotate x-Stepper
-    xStepper.prepareMovement(dAzimuth, &flags);
+    steppers[0].prepareMovementSteps(azimuthSteps, -1, &flags);
+    
+    Serial.println("Motor X");
+    lcd.setCursor(0,1);
+    lcd.print("Azimuth  :");
     runAndWait();
 
     // elevation angle-difference between sun and tracker
-    double dElevationAngle = 0 - trackerPosition.ElevationAngle;
+    //double dElevationAngle = 0 - trackerPosition.ElevationAngle;
     // rotate y-Stepper
-    yStepper.prepareMovement(dElevationAngle, &flags);
+    steppers[1].prepareMovementSteps(elevationSteps, -1, &flags);
+
+    Serial.println("Motor Y");
+    lcd.setCursor(0,1);
+    lcd.print("Elevation:");
     runAndWait();
 
     // Update tracker-position
