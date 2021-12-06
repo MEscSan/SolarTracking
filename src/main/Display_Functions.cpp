@@ -1,21 +1,32 @@
 #pragma once
 #include "Display_Functions.h"
 
-void lcdPrintGPS(LiquidCrystal_I2C lcd, GNRMC gps, int row){
+void lcdPrintCoords(LiquidCrystal_I2C lcd, GeographicalCoordinate coords, int row = 1){
 
-	if(gps.Status != 1) {
-    lcd.setCursor(0, row);
-		lcd.print("GPS unavaliable");
-	}
-	else{
   	lcd.setCursor(0, row);
   	lcd.print("Lat");
-  	lcd.print(gps.Lat);
+  	lcd.print(coords.Latitude);
   	lcd.print(" ");
   	lcd.print("Lon");
-  	lcd.print(gps.Lon);
+  	lcd.print(coords.Longitude);
   	lcd.print(":");
-	}
+}
+
+void lcdPrintGPS(LiquidCrystal_I2C lcd, GNRMC gps, int row){
+
+  if(gps.Status != 1) {
+    lcd.setCursor(0, row);
+    lcd.print("GPS unavaliable");
+  }
+  else{
+    lcd.setCursor(0, row);
+    lcd.print("Lat");
+    lcd.print(gps.Lat);
+    lcd.print(" ");
+    lcd.print("Lon");
+    lcd.print(gps.Lon);
+    lcd.print(":");
+  }
 
 }
 
