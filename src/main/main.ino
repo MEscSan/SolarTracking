@@ -37,8 +37,8 @@
 
 // Macros for millis() ant timeouts
 #define STATE0_TIMEOUT 30000 // 30s= 30000 ms
-#define GPS_TIMEOUT 90000  // 90s= 90000 ms
-#define TRACKER_DELAY 30000 // 30s= 30000 ms
+#define GPS_TIMEOUT 30000  // 90s= 90000 ms
+#define TRACKER_DELAY 100 // 30s= 30000 ms
 #define MILLIS_30_SECONDS 30000 // 30s= 30000 ms
 #define MILLIS_20_MINUTES 1200000 // 20min=1200000 ms
 
@@ -85,7 +85,7 @@ ISR_Flags flags;
 //****Object Instances****
 // Hardware
 LiquidCrystal_I2C lcd(0x27, 16, 2); //Instantiate and initialize LCD-Display, set the I2C Address to 0x27 for the LCD (16 chars and 2 line Display)
-RTC_DS1307 rtc;
+RTC_DS3231 rtc;
 GNRMC gps;
 MiniIMU imu;//, DeviceVersion::V4,AxisDefinition::Y_right_Z_Down, true);
 Stepper xStepper(xStepperPins, GEAR_RATIO_X, 0, STEPPER_TYPE, MICROSECONDS_PER_STEP_X, STEPS_PER_REVOLUTION_NEMA17);
@@ -340,7 +340,7 @@ void state2_InitNorth() {
           steppers[0].oneStep();
         }
       if(dirY >= 0){
-           yStepper.oneStep();
+           steppers[1].oneStep();
       }
 
       delayMicroseconds(MICROSECONDS_PER_STEP);
@@ -429,7 +429,7 @@ void state3_SolarTrack() {
 
         // Assume tracker in start position
         trackerPosition.Azimuth = 0;
-        trackerPosition.Zenith = 0;
+        trackerPosition.ElevationAngle = 0;
 
         isInStartPosition = true; 
         
@@ -449,53 +449,70 @@ void state3_SolarTrack() {
 
     // azimuth  angle-difference between sun and tracker
     double dAzimuth = sunPosition.Azimuth - trackerPosition.Azimuth;
-    // rotate x-Stepper
-    steppers[0].prepareMovement(dAzimuth, &flags);
-    Serial.println(steppers[0].getTotalStepsRequested());
-    Serial.println(dAzimuth);
-    runAndWait();
+    if(dAzimuth >3){
+      // rotate x-Stepper
+      steppers[0].prepareMovement(dAzimuth, &flags);
+      //Serial.println(steppers[0].getTotalStepsRequested());
+      //Serial.println(dAzimuth);
+      Serial.println("Motor X");
+      runAndWait();
+      
+      // Update tracker-position
+      trackerPosition.Azimuth += dAzimuth;
+    }
 
-    // zenith  angle-difference between sun and tracker
 
-    double zenithOld = trackerPosition.Zenith;
-    double zenithNew = sunPosition.Zenith;
-    double dZenith = zenithNew - zenithOld;
-    // translate zenith difference to motor-rotations
-    double dZenithMotor = SolarCalculator::zenithChange2MotorAngle(zenithOld, zenithNew);
-    Serial.println(dZenithMotor);
-    // rotate y-Stepper
-    steppers[1].prepareMovement(dZenithMotor, &flags);
-    Serial.println(steppers[1].getTotalStepsRequested());
-    runAndWait();
+    // Elevation Angle  angle-difference between sun and tracker
 
-    // Update tracker-position
-    trackerPosition.Azimuth += dAzimuth;
-    trackerPosition.Zenith += dZenith;
+    double elevationAngleOld = trackerPosition.ElevationAngle;
+    double elevationAngleNew = sunPosition.ElevationAngle;
+    double dElevationAngle = elevationAngleNew - elevationAngleOld;
+
+    if(dElevationAngle >1){
+      // translate elevation angle difference to motor-rotations
+      double dElevationAngleMotor = SolarCalculator::elevationAngleChange2MotorAngle(elevationAngleOld, elevationAngleNew);
+      //Serial.println(dElevationAngleMotor);
+      // rotate y-Stepper
+      steppers[1].prepareMovement(dElevationAngleMotor, &flags);
+      //Serial.println(steppers[1].getTotalStepsRequested());
+      Serial.println("Motor Y");
+      runAndWait();
+      Serial.println("Movement finished");
+      trackerPosition.ElevationAngle += dElevationAngle;
+    }
+   
+
     isInStartPosition = false;
-    lcdPrintSolarPosition(lcd, trackerPosition, 1);
+    //lcdPrintSolarPosition(lcd, trackerPosition, 1);
 
+    programTime = rtc.now();
     // Wait for 
-    delay(TRACKER_DELAY);
+    //delay(TRACKER_DELAY);
 };
-// State 4: move the tracker back to start position (Azimuth 0, Zenith 0)
+// State 4: move the tracker back to start position (Azimuth 0, elevation angle 0)
 void state4_Return2Start() {
 
-    // Turn motors back to start-position (Azimuth 0, Zenith 0)
+    lcd.clear();
+    lcdPrintTime(lcd, rtc, 0);
+    lcd.setCursor(0, 1);
+    lcd.print("S74: Reseting...");
+        
+    // Turn motors back to start-position (Azimuth 0, elevation angle 0)
     // azimuth  angle-difference between sun and tracker
     double dAzimuth = 0 - trackerPosition.Azimuth;
     // rotate x-Stepper
     xStepper.prepareMovement(dAzimuth, &flags);
     runAndWait();
 
-    // zenith  angle-difference between sun and tracker
-    double dZenith = 0 - trackerPosition.Zenith;
+    // elevation angle-difference between sun and tracker
+    double dElevationAngle = 0 - trackerPosition.ElevationAngle;
     // rotate y-Stepper
-    yStepper.prepareMovement(dZenith, &flags);
+    yStepper.prepareMovement(dElevationAngle, &flags);
     runAndWait();
 
     // Update tracker-position
     trackerPosition.Azimuth = 0;
-    trackerPosition.Zenith = 0;
+    trackerPosition.ElevationAngle = 0;
 
     isInStartPosition = true;
 };
@@ -564,6 +581,7 @@ bool transitionS2S3() {
 // Change from state 3 to state 4 if button 0 is pressed
 bool transitionS3S4() {
     bool changeState = false;
+    Serial.println("Transition 3->4");
     // Receive IR-remote signal
     if (irrecv.decode(&results)) { // Waiting for decoding
 
@@ -601,7 +619,6 @@ void setup() {
 
     // Set serial monitor
     Serial.begin(9600);
-    
     // Set LCD-Display 
     lcd.init();       // initialize lcd
     lcd.backlight();  // turn on backlight
@@ -609,12 +626,12 @@ void setup() {
     
     // Set RTC-Clock
     rtc.begin();
-    //if (! rtc.isrunning()) {
-      //Serial.println("RTC is NOT running, let's set the time!");
+    if (rtc.lostPower()) {
+      Serial.println("RTC is NOT running, let's set the time!");
       // When time needs to be set on a new device, or after a power loss, the
       // following line sets the RTC to the date & time this sketch was compiled
-    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
-    //}
+      rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+    }
     // Initialize global time variable
     programTime = (DateTime)rtc.now();
     programMicros = micros();
@@ -634,6 +651,7 @@ void setup() {
     S1->addTransition(&transitionS1S2, S2);
     S2->addTransition(&transitionS2S3, S3);
     S3->addTransition(&transitionS3S4, S4);
+    S4->addTransition(&transitionS4S1, S1);
 
     // Set IR-Reciever
     irrecv.enableIRIn();

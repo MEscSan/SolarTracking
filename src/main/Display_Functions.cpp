@@ -19,7 +19,7 @@ void lcdPrintGPS(LiquidCrystal_I2C lcd, GNRMC gps, int row){
 
 }
 
-void lcdPrintTime(LiquidCrystal_I2C lcd, RTC_DS1307 rtc, int row){
+void lcdPrintTime(LiquidCrystal_I2C lcd, RTC_DS3231 rtc, int row){
 	DateTime now = rtc.now();
 	lcd.setCursor(0, row);
 	lcd.print(now.day(), DEC);
@@ -40,8 +40,8 @@ void lcdPrintSolarPosition(LiquidCrystal_I2C lcd, SolarPosition s, int row){
 	lcd.print("A");
 	lcd.print(s.Azimuth);
 	lcd.print(" ");
-	lcd.print("Z");
-	lcd.print(s.Zenith);
+	lcd.print("E");
+	lcd.print(s.ElevationAngle);
 	lcd.print(" ");
 }
 
