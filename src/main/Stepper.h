@@ -56,7 +56,7 @@ class Stepper {
         /// <param name="t"></param>
         /// <param name="clicksPerStep"></param>
         /// <param name="stepsPerRevolution"></param>
-        Stepper(volatile int stepperPins[], float gearRatio = 1, unsigned int id = 0, StepperType t = StepperType::NEMA17, unsigned long microsecondsPerStep = MICROSECONDS_PER_STEP, unsigned int stepsPerRevolution = STEPS_PER_REVOLUTION_NEMA17);
+        Stepper(volatile int stepperPins[], float gearRatio = 1, unsigned int id = 0, StepperType t = StepperType::NEMA17, unsigned long microsecondsPerStep = MICROSECONDS_PER_STEP, unsigned long stepsPerRevolution = STEPS_PER_REVOLUTION_NEMA17);
             
         // Public Methods
         void oneStep();
@@ -72,11 +72,12 @@ class Stepper {
         volatile unsigned long getTotalStepsRequested();
         volatile unsigned long getMicrosecondsPerStep();
         long getStepPosition();
+        double getAngle();
         
       
         void setMovementDone(volatile bool value);
         void setDirection(volatile int dir);
-        void setStepCountInMovement(volatile unsigned int value);
+        void setStepCountInMovement(volatile unsigned long value);
         void setStepPosition(long value);
         
     private:
@@ -91,10 +92,10 @@ class Stepper {
         volatile int _dir;                           // current direction of movement, used to keep track of position
         volatile unsigned long _totalStepsRequested;  // number of steps requested for current movement
         volatile bool _movementDone = false;         // true if the current movement has been completed (used by main program to wait for completion)
-        long _stepPosition;                          // current position of stepper (total of all movements taken so far)
+        volatile unsigned long _stepPosition;                          // current position of stepper (total of all movements taken so far)
 
             // per iteration variables (potentially changed every interrupt)
-        volatile unsigned int _stepCountInMovement;  // number of steps completed in current movement
+        volatile unsigned long _stepCountInMovement;  // number of steps completed in current movement
 
         //Private methods
         void step28BYJ();

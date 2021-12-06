@@ -3,7 +3,7 @@
 
 
 //****Constructor****
-Stepper::Stepper(volatile int stepperPins[], float gearRatio, unsigned int id, StepperType t, unsigned long microsecondsPerStep, unsigned int stepsPerRevolution)
+Stepper::Stepper(volatile int stepperPins[], float gearRatio, unsigned int id, StepperType t, unsigned long microsecondsPerStep, unsigned long stepsPerRevolution)
 {
     _type = t;
     _microsecondsPerStep = microsecondsPerStep;
@@ -142,7 +142,6 @@ void Stepper::prepareMovement(double angleRequested, ISR_Flags *flags) {
     flags->remainingSteppersFlag |= (1 << _motorId); // "Add" motor to byte-flag
 }
 
-
 // Convert from degree to motor-steps
 unsigned long Stepper::angle2Steps(double motorAngle) {
     int motorSteps = 0;
@@ -204,6 +203,11 @@ long Stepper::getStepPosition() {
     return _stepPosition;
 }
 
+double Stepper::getAngle(){
+ double stepperAngle = steps2Angle(_stepPosition);
+ return stepperAngle;
+}
+
 void Stepper::setMovementDone(volatile bool value){
   _movementDone = value;
 }
@@ -215,7 +219,7 @@ void Stepper::setDirection(volatile int dir) {
     }
 }
 
-void Stepper::setStepCountInMovement(volatile unsigned int value){
+void Stepper::setStepCountInMovement(volatile unsigned long value){
   _stepCountInMovement = value;  
 }
 
