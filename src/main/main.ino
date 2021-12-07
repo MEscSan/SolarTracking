@@ -3,7 +3,7 @@
 #include <SoftwareSerial.h>     //  Serielle Kommunikation über digitale Pins 
 #include <StateMachine.h>
 #include <IRremote.h>
-#include <EEPROM.h>
+//#include <EEPROM.h>
 
 #include "Stepper.h"            //  Stepper Motors
 #include "SolarCalculator.h"    //  Static class for getting the position of the sun
@@ -20,9 +20,9 @@
 #define DIR_Y_PIN 6     // Nema 17 Y-Direction
 #define STEP_Y_PIN 3    // Nema 17 Y-Step
 #define LED_PIN 13
-#define MICROSECONDS_PER_STEP 900
-#define MICROSECONDS_PER_STEP_X 900
-#define MICROSECONDS_PER_STEP_Y 900
+#define MICROSECONDS_PER_STEP 1000
+#define MICROSECONDS_PER_STEP_X 1000
+#define MICROSECONDS_PER_STEP_Y 1000
 #define GEAR_RATIO 5 // Input speed / Output speed : Ratio > 1 => gear slows movement down 
 #define GEAR_RATIO 5 // Input speed / Output speed : Ratio > 1 => gear slows movement down 
 #define GEAR_RATIO_X 960 // =19,2*50
@@ -156,8 +156,7 @@ ISR(TIMER1_COMPA_vect) {
             unsigned long newStepCount = s.getStepCountInMovement();
             newStepCount++;
             s.setStepCountInMovement(newStepCount);
-            Serial.println(s.getStepCountInMovement()
-            );
+            //Serial.println(s.getStepCountInMovement());
             
             // Update total step-counter
             unsigned long newStepPosition = s.getStepPosition();
@@ -487,9 +486,7 @@ void state3_SolarTrack() {
       
         // Update tracker-position
         trackerPosition.Azimuth += dAzimuth;
-        
       }
-
 
       // Elevation Angle  angle-difference between sun and tracker
       double elevationAngleOld = trackerPosition.ElevationAngle;
@@ -507,10 +504,10 @@ void state3_SolarTrack() {
         // rotate y-Stepper
         steppers[1].prepareMovement(dElevationAngleMotor, &flags);
         Serial.print(" -> Steps: ");
-        Serial.println(steppers[1].getTotalStepsRequested());
+        Serial.print(steppers[1].getTotalStepsRequested());
         elevationSteps += steppers[1].getTotalStepsRequested();
       
-        Serial.println("Motor Y");
+        Serial.print("\nMotor Y");
         lcd.setCursor(0,1);
         lcd.print("New elevation    ");
         runAndWait();
@@ -518,13 +515,13 @@ void state3_SolarTrack() {
         trackerPosition.ElevationAngle += dElevationAngle;
       }
       
-      Serial.print(" Step-position y: ");
-      Serial.println(steppers[1].getStepPosition());
+      Serial.print("\nStep-position y: ");
+      Serial.print(steppers[1].getStepPosition());
       lcd.setCursor(0,1);
       lcd.print("A:");
       lcd.print(steppers[0].getAngle(),2);
       lcd.print(" E:");
-      lcd.print(steppers[1].getAngle(),2);
+      lcd.print(trackerPosition.ElevationAngle);
       lcd.print("         ");
       
       
@@ -555,6 +552,7 @@ void state4_Return2Start() {
     // elevation angle-difference between sun and tracker
     //double dElevationAngle = 0 - trackerPosition.ElevationAngle;
     // rotate y-Stepper
+    Serial.println(elevationSteps);
     steppers[1].prepareMovementSteps(elevationSteps, -1, &flags);
 
     Serial.println("Motor Y");

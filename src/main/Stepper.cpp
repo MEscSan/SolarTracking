@@ -91,12 +91,12 @@ void Stepper::stepNema17() {
     int stepPin = _stepperPins[1];
     
     if (_dir) {
-        //Counterclockwise
-        digitalWrite(dirPin, LOW);
+        //Clockwise
+        digitalWrite(dirPin, HIGH);
     }
     else {
-        // Clockwise
-        digitalWrite(dirPin, HIGH);
+        // Counterlockwise
+        digitalWrite(dirPin, LOW);
     }
     digitalWrite(stepPin, HIGH);
     digitalWrite(stepPin, LOW);
