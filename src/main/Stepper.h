@@ -69,7 +69,7 @@ class Stepper {
         // Getter- and Setter
         volatile bool getMovementDone();
         volatile int getDirection();
-        volatile unsigned int getStepCountInMovement();
+        volatile unsigned long getStepCountInMovement();
         volatile unsigned long getTotalStepsRequested();
         volatile unsigned long getMicrosecondsPerStep();
         long getStepPosition();
@@ -85,7 +85,7 @@ class Stepper {
         //Attributes
         volatile StepperType _type;                  // Motor type, either eihter NEMA17 or 28BYJ
         volatile unsigned long _microsecondsPerStep;       // timer clicks between two steps, smaller is faster  
-        volatile unsigned int _stepsPerRevolution;
+        volatile unsigned long _stepsPerRevolution;
         volatile float _gearRatio;                   // Input speed / Output speed : Ratio > 1 => gear slows movement down 
         volatile unsigned int _motorId;               // Motor Id for using several motors
             // derived parameters (automatically updated)

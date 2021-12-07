@@ -24,13 +24,8 @@
 #define MICROSECONDS_PER_STEP_X 900
 #define MICROSECONDS_PER_STEP_Y 900
 #define GEAR_RATIO 5 // Input speed / Output speed : Ratio > 1 => gear slows movement down 
-#define GEAR_RATIO_X 19.2 
-#define GEAR_RATIO_Y 19.2 
-#define MICROSECONDS_PER_STEP 1000
-#define MICROSECONDS_PER_STEP_X 1000
-#define MICROSECONDS_PER_STEP_Y 1000
 #define GEAR_RATIO 5 // Input speed / Output speed : Ratio > 1 => gear slows movement down 
-#define GEAR_RATIO_X 19.2 
+#define GEAR_RATIO_X 960 // =19,2*50
 #define GEAR_RATIO_Y 19.2 
 #define GEAR_RATIO_WORM_DRIVE 50
 #define NUM_STEPPERS 2
@@ -101,7 +96,7 @@ LiquidCrystal_I2C lcd(0x27, 16, 2); //Instantiate and initialize LCD-Display, se
 RTC_DS3231 rtc;
 GNRMC gps;
 MiniIMU imu;//, DeviceVersion::V4,AxisDefinition::Y_right_Z_Down, true);
-Stepper xStepper(xStepperPins, GEAR_RATIO_X*GEAR_RATIO_WORM_DRIVE, 0, STEPPER_TYPE, MICROSECONDS_PER_STEP_X, STEPS_PER_REVOLUTION_NEMA17);
+Stepper xStepper(xStepperPins, GEAR_RATIO_X, 0, STEPPER_TYPE, MICROSECONDS_PER_STEP_X, STEPS_PER_REVOLUTION_NEMA17);
 Stepper yStepper(yStepperPins, GEAR_RATIO_Y, 1, STEPPER_TYPE, MICROSECONDS_PER_STEP_Y, STEPS_PER_REVOLUTION_NEMA17);
 IRrecv irrecv(RECV_PIN); // Create a class object used to receive IR-remote control commands
 decode_results results; // Create a decoding results class object for IR-Remote
@@ -125,7 +120,7 @@ void runAndWait() {
     while (flags.remainingSteppersFlag) {
         ledState = !ledState;
     }
-
+    
     flags.remainingSteppersFlag = 0;
     flags.nextStepperFlag = 0;
 }
@@ -152,26 +147,20 @@ ISR(TIMER1_COMPA_vect) {
         volatile Stepper& s = steppers[i];
         // Serial.print("Requested Steps");
         //Serial.println(s.getTotalStepsRequested());
-        volatile unsigned int stepsRequested = s.getTotalStepsRequested();
+        volatile unsigned long stepsRequested = s.getTotalStepsRequested();
         
         // Run one step in the motor
         if (s.getStepCountInMovement() < stepsRequested) {
             s.oneStep();
             // Update step-counter for current movement
-            unsigned int newStepCount = s.getStepCountInMovement();
+            unsigned long newStepCount = s.getStepCountInMovement();
             newStepCount++;
             s.setStepCountInMovement(newStepCount);
-
-            // Update disyplay only once every 100 steps
-            if(newStepCount%100 == 0){
-              lcd.setCursor(10,1);
-              lcd.print(s.getAngle(),2);
-              //Print 8xSpace to clear the rest of the line
-              lcd.print("        ");
-            }
+            Serial.println(s.getStepCountInMovement()
+            );
             
             // Update total step-counter
-            long newStepPosition = s.getStepPosition();
+            unsigned long newStepPosition = s.getStepPosition();
             newStepPosition += s.getDirection() == 0 ? 1 : -1;
             s.setStepPosition(newStepPosition);
 
@@ -251,7 +240,7 @@ void state0_TurnOn(){
 
         lcd.clear();
         lcd.setCursor(0, 0);
-        lcd.print("S0: Turning On");
+        lcd.print("Turning On");
         lcdPrintTime(lcd, rtc,1);
     }
 
@@ -261,7 +250,7 @@ void state0_TurnOn(){
     }
 
      switch (results.value) {
-      case IR_REMOTE_PLAY:    
+      case IR_REMOTE_0:    
           isReadyForLeveling = true;
           break;
       case IR_REMOTE_3:
@@ -283,7 +272,7 @@ void state0_TurnOn(){
 void state1_InitLeveling() {
 
     lcd.setCursor(0, 0);
-    lcd.print("S1: Nivelieren");
+    lcd.print("Nivelieren");
     lcdPrintTime(lcd, rtc, 1);
 };
 // State 2: initalisation, set mirror/solar-panel to the north
@@ -296,7 +285,7 @@ void state2_InitNorth() {
       isNotOriented = true;
       programMillis = millis();
       lcd.setCursor(0, 0);
-      lcd.print("S2: Spiegel zum  ");
+      lcd.print("Spiegel zum  ");
       lcd.setCursor(0, 1);
       lcd.print("Norden richten");  
       dirX = -1;
@@ -308,67 +297,64 @@ void state2_InitNorth() {
 
     while(isNotOriented){
       if (irrecv.decode(&results)) { // Waiting for decoding
-        irrecv.resume(); // Receive the next value
+
         // Print out the decoded results
          switch (results.value) {
           case IR_REMOTE_2:    
               dirY = 0;   // Y+
               lcd.clear();
-              lcd.print("S2: Y+  ");
+              lcd.print("Y+  ");
               break;
           case IR_REMOTE_8:  
               dirY = 1;  // Y-
               lcd.clear();
-              lcd.print("S2: Y-  ");
+              lcd.print("Y-  ");
               break;
           case IR_REMOTE_4:  
               dirX = 0;  // X+
               lcd.clear();
-              lcd.print("S2: X+  ");
+              lcd.print("X+  ");
               break;
           case IR_REMOTE_6:
               dirX = 1;    // X-
               lcd.clear();
-              lcd.print("S2: X-  ");
+              lcd.print("X-  ");
               break;
           case IR_REMOTE_5: 
               dirX = -1;   // Stop both motors
               dirY = -1;
               lcd.clear();
-              lcd.print("S2: Stop  ");
+              lcd.print("Stop  ");
               break;
           case IR_REMOTE_1:
                isNotOriented = false;
                lcd.clear();
-               lcd.print("S2: North found!");
+               lcd.print("North found!");
                break;
           default: // Any other button pressed (except for 0, which changes State)
               // Do nothing
               break;
          }
-      }
-         
-        if(dirX >= 0){
+         if(dirX >= 0){
           steppers[0].setDirection(dirX);
-          //steppers[0].oneStep();
-        }
-        if(dirY >= 0){
+         }
+         if(dirY >= 0){
            steppers[1].setDirection(dirY);
-           //steppers[1].oneStep(dirY);
-        }
-        irrecv.resume(); // Receive the next value
+         }
+         irrecv.resume(); // Receive the next value
       }
-      
+                
       if(dirX >= 0){
           steppers[0].oneStep();
         }
       if(dirY >= 0){
            steppers[1].oneStep();
       }
-
       delayMicroseconds(MICROSECONDS_PER_STEP);
-      //Serial.println(micros() - programMicros);
-      //programMicros = micros();
+    }
+
+    //Serial.println(micros() - programMicros);
+    //programMicros = micros();
 };
 // State 3: track the sun (tracker updates its angles every 20 minutes)
 void state3_SolarTrack() {
@@ -386,7 +372,7 @@ void state3_SolarTrack() {
         elevationSteps = 0;
         
         lcd.setCursor(0, 0);
-        lcd.print("S3:Searching GPS");
+        lcd.print("Searching GPS");
         gps = L76X_Gat_GNRMC();
         Serial.print("\r\n");
         Serial.print("Time:");
@@ -404,7 +390,7 @@ void state3_SolarTrack() {
         Serial.print("Latitude area: ");
         Serial.print(gps.Lat_area);
         Serial.print("\t Longitude area: ");
-        Serial.print(gps.Lon_area);
+        Serial.println(gps.Lon_area);
 
         // Wait until GPS-Sensor delivers realistic values or timeout is over
         while(gps.Status == 0 || gps.Lat == 0.00 || gps.Lon == 0.00) {
@@ -428,7 +414,7 @@ void state3_SolarTrack() {
             Serial.print("Latitude area: ");
             Serial.print(gps.Lat_area);
             Serial.print("\t Longitude area: ");
-            Serial.print(gps.Lon_area);
+            Serial.println(gps.Lon_area);
             
             coords.Latitude = gps.Lat;
             coords.Longitude = gps.Lon;
@@ -464,33 +450,46 @@ void state3_SolarTrack() {
     DateTime now = rtc.now();
     
     sunPosition = SolarCalculator::getSolarPosition(programTime, coords);
-    lcd.clear();
 
     // Update Display only once a second
-    if((programMillis - millis()) > 1000 ){
+    if((programMillis - millis()) > 1000 || isFirstRun){
       
       lcdPrintSolarPosition(lcd, sunPosition, 0);
-      lcdPrintCoords(lcd, coords, 1);
+      //lcdPrintCoords(lcd, coords, 1);
+      programMillis = millis();
     }
    
     // Move motors only once everytime TRACKER_DELAY is over (in min) or if 
     // the state is running for the first time
-    if((now.minute() - programTime.minute())> TRACKER_DELAY ){
+    if((now.minute() - programTime.minute())> TRACKER_DELAY || isFirstRun){
 
       // azimuth  angle-difference between sun and tracker
       double dAzimuth = sunPosition.Azimuth - trackerPosition.Azimuth;
-      
-      // rotate x-Stepper
-      steppers[0].prepareMovement(dAzimuth, &flags);
-      azimuthSteps += steppers[0].getTotalStepsRequested();
+      Serial.print("\nAzimuth ");
+      Serial.print(sunPosition.Azimuth);
+      Serial.print(" -> dAzimuth : ");
+      Serial.print(dAzimuth);
+
+      if(dAzimuth > 1){
+        // rotate x-Stepper
+        steppers[0].prepareMovement(dAzimuth, &flags);
+        Serial.print("-> Steps: ");
+        Serial.println(steppers[0].getTotalStepsRequested());
+        azimuthSteps += steppers[0].getTotalStepsRequested();
             
-      Serial.println("Motor X");
-      lcd.setCursor(0,1);
-      lcd.print("Azimuth  :");
-      runAndWait();
+        Serial.println("Motor X");
+        lcd.setCursor(0,1);
+        lcd.print("New azimuth      ");
+        runAndWait();
+
+        Serial.print("\nStep-position x: ");
+        Serial.println(steppers[0].getStepPosition());
       
-      // Update tracker-position
-      trackerPosition.Azimuth += dAzimuth;
+        // Update tracker-position
+        trackerPosition.Azimuth += dAzimuth;
+        
+      }
+
 
       // Elevation Angle  angle-difference between sun and tracker
       double elevationAngleOld = trackerPosition.ElevationAngle;
@@ -499,32 +498,48 @@ void state3_SolarTrack() {
 
       // translate elevation angle difference to motor-rotations
       double dElevationAngleMotor = SolarCalculator::elevationAngleChange2MotorAngle(elevationAngleOld, elevationAngleNew);
+      Serial.print("\nElevation ");
+      Serial.print(sunPosition.ElevationAngle);
+      Serial.print(" -> dElevationAngle (Motor) : ");
+      Serial.print(dElevationAngleMotor);
+
+      if(dElevationAngleMotor > 1){
+        // rotate y-Stepper
+        steppers[1].prepareMovement(dElevationAngleMotor, &flags);
+        Serial.print(" -> Steps: ");
+        Serial.println(steppers[1].getTotalStepsRequested());
+        elevationSteps += steppers[1].getTotalStepsRequested();
       
-      // rotate y-Stepper
-      steppers[1].prepareMovement(dElevationAngleMotor, &flags);
-      elevationSteps += steppers[1].getTotalStepsRequested();
+        Serial.println("Motor Y");
+        lcd.setCursor(0,1);
+        lcd.print("New elevation    ");
+        runAndWait();
+
+        trackerPosition.ElevationAngle += dElevationAngle;
+      }
       
-      Serial.println("Motor Y");
+      Serial.print(" Step-position y: ");
+      Serial.println(steppers[1].getStepPosition());
       lcd.setCursor(0,1);
-      lcd.print("Elevation:");
-      runAndWait();
+      lcd.print("A:");
+      lcd.print(steppers[0].getAngle(),2);
+      lcd.print(" E:");
+      lcd.print(steppers[1].getAngle(),2);
+      lcd.print("         ");
       
-      Serial.println("Movement finished");
       
-      trackerPosition.ElevationAngle += dElevationAngle;
-    
+     
+      programTime = rtc.now();
     }
     
     isInStartPosition = false;
-    programTime = rtc.now();
 };
 // State 4: move the tracker back to start position (Azimuth 0, elevation angle 0)
 void state4_Return2Start() {
 
     lcd.clear();
-    lcdPrintTime(lcd, rtc, 0);
-    lcd.setCursor(0, 1);
-    lcd.print("S74: Reseting...");
+    lcd.setCursor(0, 0);
+    lcd.print("Reseting...");
         
     // Turn motors back to start-position (Azimuth 0, elevation angle 0)
     // azimuth  angle-difference between sun and tracker
@@ -534,7 +549,7 @@ void state4_Return2Start() {
     
     Serial.println("Motor X");
     lcd.setCursor(0,1);
-    lcd.print("Azimuth  :");
+    lcd.print("New azimuth      ");
     runAndWait();
 
     // elevation angle-difference between sun and tracker
@@ -544,9 +559,15 @@ void state4_Return2Start() {
 
     Serial.println("Motor Y");
     lcd.setCursor(0,1);
-    lcd.print("Elevation:");
+    lcd.print("New elevation     ");
     runAndWait();
 
+    lcd.setCursor(0,1);
+    lcd.print("A:");
+    lcd.print(steppers[0].getAngle(),2);
+    lcd.print(" E:");
+    lcd.print(steppers[1].getAngle(),2);
+    lcd.print("         ");
     // Update tracker-position
     trackerPosition.Azimuth = 0;
     trackerPosition.ElevationAngle = 0;
@@ -608,9 +629,6 @@ bool transitionS2S3() {
     if (!isNotOriented) { // Waiting for decoding
         changeState = true;
         lcd.clear();
-        /*lcd.clear();
-        lcd.setCursor(0, 1);
-        lcd.print("S3: Initialising GPS");*/
     }
     
     return changeState;
@@ -618,7 +636,7 @@ bool transitionS2S3() {
 // Change from state 3 to state 4 if button 0 is pressed
 bool transitionS3S4() {
     bool changeState = false;
-    Serial.println("Transition 3->4");
+    //Serial.println("Transition 3->4");
     // Receive IR-remote signal
     if (irrecv.decode(&results)) { // Waiting for decoding
 

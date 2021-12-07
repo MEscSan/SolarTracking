@@ -108,12 +108,12 @@ void Stepper::stepNema17(int dir) {
     int stepPin = _stepperPins[1];
     
     if (dir) {
-        //Counterclockwise
-        digitalWrite(dirPin, LOW);
+        //Clockwise
+        digitalWrite(dirPin, HIGH);
     }
     else {
-        // Clockwise
-        digitalWrite(dirPin, HIGH);
+        // Counterlockwise
+        digitalWrite(dirPin, LOW);
     }
     digitalWrite(stepPin, HIGH);
     digitalWrite(stepPin, LOW);
@@ -152,7 +152,7 @@ void Stepper::prepareMovementSteps(unsigned long stepsRequested, int dir, ISR_Fl
 
 // Convert from degree to motor-steps
 unsigned long Stepper::angle2Steps(double motorAngle) {
-    int motorSteps = 0;
+    unsigned long motorSteps = 0;
 
     motorSteps = (unsigned long) (abs(motorAngle) * _stepsPerRevolution * _gearRatio )/ 360.0;
 
@@ -173,16 +173,6 @@ double Stepper::steps2Angle(unsigned long motorSteps) {
     int motorAngle = 0;
 
     motorAngle = (int)360 * motorSteps / (_stepsPerRevolution * _gearRatio);
-    //motorAngle = motorAngle - (motorAngle/360)*360.0; // Check that angle isn't bigger than 360�
-
-    /*
-    //For Debug-purpose only
-    Serial.print(motorSteps);
-    Serial.print(" Steps");
-    Serial.print("\t");
-    Serial.print(motorAngle);
-    Serial.println("�");
-    */
 
     return motorAngle;
 }
@@ -199,7 +189,7 @@ volatile int Stepper::getDirection(){
     return _dir;
 }
 
-volatile unsigned int Stepper::getStepCountInMovement() {
+volatile unsigned long Stepper::getStepCountInMovement() {
     return _stepCountInMovement;
 }
 
