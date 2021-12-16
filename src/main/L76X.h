@@ -75,6 +75,7 @@ typedef struct {
 }Coordinates;
 
 void L76X_Init_9600();
+void L76X_Start(UDOUBLE baudrate);
 void L76X_Stop();
 void L76X_Send_Command(char *data);
 Coordinates L76X_Baidu_Coordinates(void);

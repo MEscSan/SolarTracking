@@ -46,7 +46,7 @@
  so only the following can be used for RX:
  10, 11, 12, 13, 50, 51, 52, 53, 62, 63, 64, 65, 66, 67, 68, 69
 */
-SoftwareSerial mySerial(52, 53); // (RX, TX):  RX, Orange (3): 21; TX, Blue (2): 20
+SoftwareSerial mySerial(52, 53); // (RX, TX):  RX, Blue (3): 21; TX, Orange (2): 20
 
 /******************************************************************************
 function: 

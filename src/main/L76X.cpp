@@ -93,6 +93,10 @@ void L76X_Init_9600() {
     L76X_Send_Command(SET_NMEA_OUTPUT);
 }
 
+void L76X_Start(UDOUBLE baudrate){
+  DEV_Start_Listening(baudrate);  
+}
+
 void L76X_Stop(){
   DEV_Stop_Listening();  
 }

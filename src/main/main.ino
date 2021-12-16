@@ -61,6 +61,9 @@
 #define IR_REMOTE_9 0xFF52AD
 #define IR_BUTTON_STILL_PRESSED 0xFFFFFFFF
 
+// Macros for End-Point-Button
+#define ENDPOINT_PIN 26
+
 #pragma region Global variables
 /******************************************************************************
 Global variables
@@ -77,6 +80,7 @@ bool isLeveled = false;
 //bool isRightTime = false;
 bool isReadyForLeveling = false;
 bool isNotOriented = true;
+bool isVertical = false; // Mirror is in vertical position (elevation angle 0°)
 unsigned long programMillis = 0;
 unsigned long programMicros = 0; 
 unsigned long azimuthSteps = 0;
@@ -300,12 +304,12 @@ void state2_InitNorth() {
         // Print out the decoded results
          switch (results.value) {
           case IR_REMOTE_2:    
-              dirY = 0;   // Y+
+              dirY = 1;   // Y+
               lcd.clear();
               lcd.print("Y+  ");
               break;
           case IR_REMOTE_8:  
-              dirY = 1;  // Y-
+              dirY = 0;  // Y-
               lcd.clear();
               lcd.print("Y-  ");
               break;
@@ -326,9 +330,18 @@ void state2_InitNorth() {
               lcd.print("Stop  ");
               break;
           case IR_REMOTE_1:
-               isNotOriented = false;
-               lcd.clear();
-               lcd.print("North found!");
+               if(isVertical){
+                isNotOriented = false;
+                lcd.clear();
+                lcd.print("North found!"); 
+               }
+               else{
+                lcd.clear();
+                lcd.print("y-Endpunkt noch");
+                lcd.setCursor(0,1);
+                lcd.print("nicht erreicht!");
+               }
+               
                break;
           default: // Any other button pressed (except for 0, which changes State)
               // Do nothing
@@ -346,8 +359,15 @@ void state2_InitNorth() {
       if(dirX >= 0){
           steppers[0].oneStep();
         }
-      if(dirY >= 0){
+      // If movement in y-direction required AND mirror not yet Vertical
+      if(dirY >= 0 & (digitalRead(ENDPOINT_PIN)==1)){
            steppers[1].oneStep();
+      }
+      else 
+      if(digitalRead(ENDPOINT_PIN)==0){
+        lcd.setCursor(0, 1);
+        lcd.print("y-Endpunkt!");    
+        isVertical = true;
       }
       delayMicroseconds(MICROSECONDS_PER_STEP);
     }
@@ -361,6 +381,7 @@ void state3_SolarTrack() {
     bool isFirstRun = false;
     if(machine.executeOnce) {
         // Set GPS-Device
+        L76X_Start(9600);
         L76X_Init_9600();
         
         // Get coordinates from GPS
@@ -500,9 +521,9 @@ void state3_SolarTrack() {
       Serial.print(" -> dElevationAngle (Motor) : ");
       Serial.print(dElevationAngleMotor);
 
-      if(dElevationAngleMotor > 1){
+      if(dElevationAngle > 1){
         // rotate y-Stepper
-        steppers[1].prepareMovement(dElevationAngleMotor, &flags);
+        steppers[1].prepareMovement(-dElevationAngleMotor, &flags);
         Serial.print(" -> Steps: ");
         Serial.print(steppers[1].getTotalStepsRequested());
         elevationSteps += steppers[1].getTotalStepsRequested();
@@ -513,6 +534,7 @@ void state3_SolarTrack() {
         runAndWait();
 
         trackerPosition.ElevationAngle += dElevationAngle;
+        isVertical= false;
       }
       
       Serial.print("\nStep-position y: ");
@@ -685,6 +707,20 @@ void setup() {
       // When time needs to be set on a new device, or after a power loss, the
       // following line sets the RTC to the date & time this sketch was compiled
       rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+      DateTime now = rtc.now();
+
+      Serial.print(now.year(), DEC);
+      Serial.print('/');
+      Serial.print(now.month(), DEC);
+      Serial.print('/');
+      Serial.print(now.day(), DEC);
+      Serial.print(now.hour(), DEC);
+      Serial.print(':');
+      Serial.print(now.minute(), DEC);
+      Serial.print(':');
+      Serial.print(now.second(), DEC);
+      Serial.println();
+
     }
     // Initialize global time variable
     programTime = (DateTime)rtc.now();
@@ -710,6 +746,8 @@ void setup() {
     irrecv.enableIRIn();
 
     //xStepper.stepFunc = xStepNema17;
+    // Set End-Point-Pin
+    pinMode(ENDPOINT_PIN, INPUT_PULLUP);
 }
 
 void loop() {
