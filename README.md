@@ -6,8 +6,8 @@ Warnings:
 
 # Required Libraries:
 For State-Machine
--> StateMachine: https://github.com/jrullan/StateMachine
--> LinkedList (in library-directory delete file test.cpp): https://github.com/ivanseidel/LinkedList/blob/master/examples/Sort/Sort.ino
+* StateMachine: https://github.com/jrullan/StateMachine
+* LinkedList (in library-directory delete file test.cpp): https://github.com/ivanseidel/LinkedList/blob/master/examples/Sort/Sort.ino
 
 For IR-Remote control
 -> IRremote: https://github.com/Arduino-IRremote/Arduino-IRremote
