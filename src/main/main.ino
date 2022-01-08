@@ -80,7 +80,6 @@ bool isLeveled = false;
 //bool isRightTime = false;
 bool isReadyForLeveling = false;
 bool isNotOriented = true;
-bool isVertical = false; // Mirror is in vertical position (elevation angle 0°)
 unsigned long programMillis = 0;
 unsigned long programMicros = 0; 
 unsigned long azimuthSteps = 0;
@@ -297,13 +296,15 @@ void state2_InitNorth() {
     }
     
       //timer1CompB_On();
+    // Turn the mirror into vertical position
+    mirror2VerticalPosition();
 
     while(isNotOriented){
       if (irrecv.decode(&results)) { // Waiting for decoding
 
         // Print out the decoded results
          switch (results.value) {
-          case IR_REMOTE_2:    
+          /*case IR_REMOTE_2:    
               dirY = 1;   // Y+
               lcd.clear();
               lcd.print("Y+  ");
@@ -312,7 +313,7 @@ void state2_InitNorth() {
               dirY = 0;  // Y-
               lcd.clear();
               lcd.print("Y-  ");
-              break;
+              break;*/
           case IR_REMOTE_4:  
               dirX = 0;  // X+
               lcd.clear();
@@ -324,23 +325,24 @@ void state2_InitNorth() {
               lcd.print("X-  ");
               break;
           case IR_REMOTE_5: 
-              dirX = -1;   // Stop both motors
-              dirY = -1;
+              dirX = -1;   // Stop motor
+              //dirY = -1;
               lcd.clear();
               lcd.print("Stop  ");
               break;
           case IR_REMOTE_1:
-               if(isVertical){
+               isNotOriented = false;
+               /*if(isVertical){
                 isNotOriented = false;
                 lcd.clear();
                 lcd.print("North found!"); 
                }
                else{
-                lcd.clear();
-                lcd.print("y-Endpunkt noch");
-                lcd.setCursor(0,1);
-                lcd.print("nicht erreicht!");
-               }
+                   lcd.clear();
+                   lcd.print("y-Endpunkt noch");
+                   lcd.setCursor(0,1);
+                   lcd.print("nicht erreicht!");
+               }*/
                
                break;
           default: // Any other button pressed (except for 0, which changes State)
@@ -350,25 +352,16 @@ void state2_InitNorth() {
          if(dirX >= 0){
           steppers[0].setDirection(dirX);
          }
-         if(dirY >= 0){
+         /*if(dirY >= 0){
            steppers[1].setDirection(dirY);
-         }
+         }*/
          irrecv.resume(); // Receive the next value
       }
                 
       if(dirX >= 0){
           steppers[0].oneStep();
         }
-      // If movement in y-direction required AND mirror not yet Vertical
-      if(dirY >= 0 & (digitalRead(ENDPOINT_PIN)==1)){
-           steppers[1].oneStep();
-      }
-      else 
-      if(digitalRead(ENDPOINT_PIN)==0){
-        lcd.setCursor(0, 1);
-        lcd.print("y-Endpunkt!");    
-        isVertical = true;
-      }
+
       delayMicroseconds(MICROSECONDS_PER_STEP);
     }
 
@@ -534,7 +527,7 @@ void state3_SolarTrack() {
       runAndWait();
 
       trackerPosition.ElevationAngle += dElevationAngle;
-      isVertical= false;
+      //isVertical= false;
     }
     
     Serial.print("\nStep-position y: ");
@@ -573,12 +566,15 @@ void state4_Return2Start() {
     //double dElevationAngle = 0 - trackerPosition.ElevationAngle;
     // rotate y-Stepper
     Serial.println(elevationSteps);
-    steppers[1].prepareMovementSteps(elevationSteps, -1, &flags);
+    //steppers[1].prepareMovementSteps(elevationSteps, -1, &flags);*/
 
-    Serial.println("Motor Y");
-    lcd.setCursor(0,1);
-    lcd.print("New elevation     ");
-    runAndWait();
+    // Set mirror back to vertical position
+    mirror2VerticalPosition();
+
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Reseting...");
+    //runAndWait();
 
     lcd.setCursor(0,1);
     lcd.print("A:");
@@ -592,6 +588,26 @@ void state4_Return2Start() {
 
     isInStartPosition = true;
 };
+
+//  Turn the mirror into vertical position (elevation angle 0)
+//  Returns true when the end-point button is pressed
+void mirror2VerticalPosition() {
+
+    // Set Y-Motor direction to -Y
+    steppers[1].setDirection(0);
+    
+    lcd.clear();
+    lcd.print("Spiegel noch");
+    lcd.setCursor(0, 1);
+    lcd.print("nicht vertikal");
+
+    while (digitalRead(ENDPOINT_PIN) == 1) {
+        steppers[1].oneStep();
+    }
+
+    lcd.clear();
+    lcd.print("Spiegel vertikal!");
+}
 
 // Pass states to the machine:
 State* S0 = machine.addState(&state0_TurnOn);
