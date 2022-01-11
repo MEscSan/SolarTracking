@@ -304,7 +304,7 @@ void state2_InitNorth() {
 
         // Print out the decoded results
          switch (results.value) {
-          /*case IR_REMOTE_2:    
+          case IR_REMOTE_2:    
               dirY = 1;   // Y+
               lcd.clear();
               lcd.print("Y+  ");
@@ -313,7 +313,7 @@ void state2_InitNorth() {
               dirY = 0;  // Y-
               lcd.clear();
               lcd.print("Y-  ");
-              break;*/
+              break;
           case IR_REMOTE_4:  
               dirX = 0;  // X+
               lcd.clear();
@@ -326,7 +326,7 @@ void state2_InitNorth() {
               break;
           case IR_REMOTE_5: 
               dirX = -1;   // Stop motor
-              //dirY = -1;
+              dirY = -1;
               lcd.clear();
               lcd.print("Stop  ");
               break;
@@ -352,14 +352,17 @@ void state2_InitNorth() {
          if(dirX >= 0){
           steppers[0].setDirection(dirX);
          }
-         /*if(dirY >= 0){
+         if(dirY >= 0){
            steppers[1].setDirection(dirY);
-         }*/
+         }
          irrecv.resume(); // Receive the next value
       }
                 
       if(dirX >= 0){
           steppers[0].oneStep();
+        }
+       if(dirY >= 0){
+          steppers[1].oneStep();
         }
 
       delayMicroseconds(MICROSECONDS_PER_STEP);
@@ -433,6 +436,8 @@ void state3_SolarTrack() {
             coords.Longitude = gps.Lon;
 
             if ((millis() - programMillis) > GPS_TIMEOUT){
+            //if ((millis() - programMillis) > 0){
+            
                 // Assume we're in Karl-Marx-City
                 coords.Latitude = 52.51;
                 coords.Longitude = 13.41;
@@ -476,35 +481,7 @@ void state3_SolarTrack() {
     if(sunPosition.ElevationAngle > 0){   
       // Move motors only when the sun has moved 3° in either azimut or elevation angle or if 
       // the state is running for the first time
-     
-      // azimuth  angle-difference between sun and tracker
-      double dAzimuth = sunPosition.Azimuth - trackerPosition.Azimuth;
-      Serial.print("\nAzimuth ");
-      Serial.print(sunPosition.Azimuth);
-      Serial.print(" -> dAzimuth : ");
-      Serial.print(dAzimuth);
-  
-      if(dAzimuth > 3|| isFirstRun){
-        // rotate x-Stepper
-        steppers[0].prepareMovement(dAzimuth, &flags);
-        Serial.print("-> Steps: ");
-        Serial.println(steppers[0].getTotalStepsRequested());
-        azimuthSteps += steppers[0].getTotalStepsRequested();
-            
-        Serial.println("Motor X");
-        lcd.setCursor(0,1);
-        lcd.print("New azimuth      ");
-        runAndWait();
-  
-        Serial.print("\nStep-position x: ");
-        Serial.println(steppers[0].getStepPosition());
-      
-        // Update tracker-position
-        //trackerPosition.Azimuth += dAzimuth;
-        trackerPosition.Azimuth += steppers[0].getAngle();
-      }
-  
-      // Elevation Angle  angle-difference between sun and tracker
+            // Elevation Angle  angle-difference between sun and tracker
       double elevationAngleOld = trackerPosition.ElevationAngle;
       double elevationAngleNew = sunPosition.ElevationAngle;
       double dElevationAngle = elevationAngleNew - elevationAngleOld;
@@ -529,17 +506,47 @@ void state3_SolarTrack() {
         runAndWait();
   
         trackerPosition.ElevationAngle += dElevationAngle;
+
+        //Update display
+        Serial.print("\nStep-position y: ");
+        Serial.print(steppers[1].getStepPosition());
+
         //isVertical= false;
       }
+     
+      // azimuth  angle-difference between sun and tracker
+      double dAzimuth = sunPosition.Azimuth - trackerPosition.Azimuth;
+      Serial.print("\nAzimuth ");
+      Serial.print(sunPosition.Azimuth);
+      Serial.print(" -> dAzimuth : ");
+      Serial.print(dAzimuth);
+
+      if(dAzimuth > 3|| isFirstRun){
+        // rotate x-Stepper
+        steppers[0].prepareMovement(dAzimuth, &flags);
+        Serial.print("-> Steps: ");
+        Serial.println(steppers[0].getTotalStepsRequested());
+        azimuthSteps += steppers[0].getTotalStepsRequested();
+            
+        Serial.println("Motor X");
+        lcd.setCursor(0,1);
+        lcd.print("New azimuth      ");
+        runAndWait();
+  
+        Serial.print("\nStep-position x: ");
+        Serial.println(steppers[0].getStepPosition());
       
-      Serial.print("\nStep-position y: ");
-      Serial.print(steppers[1].getStepPosition());
-      lcd.setCursor(0,1);
-      lcd.print("A:");
-      lcd.print(steppers[0].getAngle(),2);
-      lcd.print(" E:");
-      lcd.print(trackerPosition.ElevationAngle);
-      lcd.print("         ");
+        // Update tracker-position
+        //trackerPosition.Azimuth += dAzimuth;
+        trackerPosition.Azimuth += steppers[0].getAngle();
+
+        lcd.setCursor(0,1);
+        lcd.print("A:");
+        lcd.print(steppers[0].getAngle(),2);
+        lcd.print(" E:");
+        lcd.print(trackerPosition.ElevationAngle);
+        lcd.print("         ");
+      }
     
       isInStartPosition = false;
     }
@@ -613,6 +620,7 @@ void mirror2VerticalPosition() {
 
     while (digitalRead(ENDPOINT_PIN) == 1) {
         steppers[1].oneStep();
+        delayMicroseconds(900);
     }
 
     lcd.clear();

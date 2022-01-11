@@ -57,7 +57,7 @@ class SolarCalculator {
 
 		static bool isLeapYear(int currentYear);
 		static int getDayInYear(DateTime d);
-		static int elevationAngleChange2MotorAngle(double elevationAngleOld, double elevationAngleNew);
+		static double elevationAngleChange2MotorAngle(double elevationAngleOld, double elevationAngleNew);
 
 		static double equationOfTime(int dayInYear);
 		static double decline(int dayInYear);
