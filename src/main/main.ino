@@ -287,12 +287,10 @@ void state2_InitNorth() {
       isNotOriented = true;
       programMillis = millis();
       lcd.setCursor(0, 0);
-      lcd.print("Spiegel zum  ");
-      lcd.setCursor(0, 1);
-      lcd.print("Norden richten");  
+      lcd.print("Spiegel nach Norden");
       dirX = -1;
       dirY = -1;
-
+      
     }
     
       //timer1CompB_On();
@@ -613,18 +611,16 @@ void mirror2VerticalPosition() {
     // Set Y-Motor direction to -Y
     steppers[1].setDirection(0);
     
-    lcd.clear();
-    lcd.print("Spiegel noch");
     lcd.setCursor(0, 1);
-    lcd.print("nicht vertikal");
+    lcd.print("Nicht vertikal");
 
     while (digitalRead(ENDPOINT_PIN) == 1) {
         steppers[1].oneStep();
         delayMicroseconds(900);
     }
 
-    lcd.clear();
-    lcd.print("Spiegel vertikal!");
+    lcd.setCursor(0, 1);
+    lcd.print("Spiegel vertikal!    ");
 }
 
 // Pass states to the machine:
