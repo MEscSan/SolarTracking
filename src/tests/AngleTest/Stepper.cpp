@@ -170,9 +170,9 @@ unsigned long Stepper::angle2Steps(double motorAngle) {
 
 //Convert from motor-steps to degree
 double Stepper::steps2Angle(unsigned long motorSteps) {
-    int motorAngle = 0;
+    double motorAngle = 0;
 
-    motorAngle = (int)360 * motorSteps / (_stepsPerRevolution * _gearRatio);
+    motorAngle = (double)360 * motorSteps / (_stepsPerRevolution * _gearRatio);
 
     return motorAngle;
 }

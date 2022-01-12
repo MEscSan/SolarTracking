@@ -125,8 +125,11 @@ void loop() {
     // rotate y-Stepper
     steppers[1].prepareMovement(-dElevationAngleMotor, &flags);
     Serial.print(" \t");
-    Serial.println(steppers[1].getTotalStepsRequested());
+    Serial.print(steppers[1].getTotalStepsRequested());
     elevationSteps += steppers[1].getTotalStepsRequested();
+    Serial.print(" \t");
+    
+    Serial.print("\n");
    }
    while(true);
 }

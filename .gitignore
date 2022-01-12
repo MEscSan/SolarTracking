@@ -1,4 +1,4 @@
 .vs/
 .git/
 _vm/
-_*.json
+*.json

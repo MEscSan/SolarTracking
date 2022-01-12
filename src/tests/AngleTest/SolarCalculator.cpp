@@ -126,8 +126,15 @@ Conditions:
 -> threaded bar with thread-pitch 1.25
 -> constants are application specific
 ********************************************************************/
-double SolarCalculator::elevationAngleChange2MotorAngle(double elevationAngleOld, double elevationAngleNew) {
+double SolarCalculator::elevationAngleChange2MotorAngle(double elevationAngleOld_deg, double elevationAngleNew_deg) {
 
+    // 0. Convert from degrees to rad
+    double elevationAngleOld = elevationAngleOld_deg*3.1416/180;
+    double elevationAngleNew = elevationAngleNew_deg*3.1416/180;
+    
+    Serial.print(elevationAngleNew);
+    Serial.print("\t");
+    
     // 1. Get required threaded-bar translation
     double c0Sqr = ((-cos(elevationAngleOld - RHO - PI_HALF) * 2 * A * B) + (pow(A, 2) + pow(B, 2)));
     double c0 = sqrt(c0Sqr);
@@ -137,7 +144,10 @@ double SolarCalculator::elevationAngleChange2MotorAngle(double elevationAngleOld
 
     // Translation
     double deltaC = c1 - c0;
-
+    
+    Serial.print(deltaC);
+    Serial.print("\t");
+    
     // ToDo: Check that deltaC is within Min-Max
 
     // 2. Convert translation to thread-bar turns
