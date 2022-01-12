@@ -17,7 +17,7 @@
 #define RHO 0.84318499417
 #define A  21.42574386106
 #define B 13.8
-#define THREAD_PITCH 0.125
+#define THREAD_PITCH 0.125 //cm/revolution
 
 //****Structs****
 /*typedef struct Date {
