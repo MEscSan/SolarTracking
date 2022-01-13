@@ -10,7 +10,7 @@ Stepper::Stepper(volatile int stepperPins[], float gearRatio, unsigned int id, S
     _stepsPerRevolution = stepsPerRevolution;
     _gearRatio = gearRatio;
     _motorId = id;
-    _stepPosition = 0;
+    //_stepPosition = 0;
 
     // Initialize Stepper-Pins:
     int numPins = 0;

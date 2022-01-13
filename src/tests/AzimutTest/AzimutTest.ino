@@ -108,6 +108,7 @@ ISR(TIMER1_COMPA_vect) {
             long newStepPosition = s.getStepPosition();
             newStepPosition += s.getDirection() == 0 ? 1 : -1;
             s.setStepPosition(newStepPosition);
+            //Serial.println(newStepPosition);
             
             if (s.getStepCountInMovement() >= stepsRequested) {
                 s.setMovementDone(true);
@@ -160,32 +161,6 @@ void setup() {
 }
 
 void loop() {
-   /*for(int i = 0; i<60; i+=3){
-    sunElevationOld = sunElevationNew;
-    sunElevationNew = i; 
-    
-    double dElevationAngle = sunElevationNew - sunElevationOld;
-  
-    // translate elevation angle difference to motor-rotations
-    double dElevationAngleMotor = SolarCalculator::elevationAngleChange2MotorAngle(sunElevationOld, sunElevationNew);
-    //Serial.print("\nElevation\t");
-
-    Serial.print(sunElevationNew);
-    //Serial.print("\t-> dElevationAngle (Motor):\t");
-    Serial.print("\t");
-    Serial.print(dElevationAngleMotor);
-    Serial.print("\t");
-    Serial.print(abs(dElevationAngleMotor));
-
-    // rotate y-Stepper
-    steppers[1].prepareMovement(-dElevationAngleMotor, &flags);
-    Serial.print(" \t");
-    Serial.print(steppers[1].getTotalStepsRequested());
-    elevationSteps += steppers[1].getTotalStepsRequested();
-    Serial.print(" \t");
-    
-    Serial.print("\n");
-   }*/
    
    azimuthOld = trackerPosition.Azimuth;
    elevationOld = trackerPosition.ElevationAngle;
@@ -205,8 +180,8 @@ void loop() {
    }
 
 
-   double motorAngle = SolarCalculator::elevationAngleChange2MotorAngle(elevationOld, elevationNew);
-   steppers[1].prepareMovement(-motorAngle, &flags);
+   //double motorAngle = SolarCalculator::elevationAngleChange2MotorAngle(elevationOld, elevationNew);
+   //steppers[1].prepareMovement(-motorAngle, &flags);
    
    double dAzimuth = azimuthNew-azimuthOld;
    
@@ -218,13 +193,13 @@ void loop() {
    Serial.print( steppers[0].getStepPosition());
    Serial.print("  ");
    Serial.println( steppers[0].getAngle());
-   Serial.print("Elevation: ");
+   /*Serial.print("Elevation: ");
    Serial.print( steppers[1].getStepPosition());
    Serial.print("  ");
-   Serial.println( steppers[1].getAngle());
+   Serial.println( steppers[1].getAngle());*/
 
    trackerPosition.Azimuth =  azimuthNew; 
    trackerPosition.ElevationAngle = elevationNew; 
    counter++;
-   
+   while(true);
 }
