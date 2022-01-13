@@ -79,7 +79,7 @@ class Stepper {
         void setMovementDone(volatile bool value);
         void setDirection(volatile int dir);
         void setStepCountInMovement(volatile unsigned long value);
-        void setStepPosition(long value);
+        void setStepPosition( long value);
         
     private:
         //Attributes
@@ -113,5 +113,46 @@ class Stepper {
                                                       //      NEMA17  :   {dir, step}
                                                       //      28BYJ   :   {pin1, pin2, pin3, pin4}    
 };
+
+#pragma region Obsolete procedural Structure
+/*
+//****Structs****
+typedef struct StepperInfo {
+    // Motor set-up
+    volatile StepperType t;                     // Motor type, either eihter NEMA17 or 28BYJ
+    volatile unsigned long clicksPerStep;       // timer clicks between two steps, smaller is faster
+    volatile unsigned int stepsPerRevolution;
+    volatile float gearRatio;                   // Input speed / Output speed : Ratio > 1 => gear slows movement down
+    volatile LiquidCrystal_I2C lcd;             // LCD-Display to which the motor delivers
+
+    // derived parameters (automatically updated)
+    // per movement variables (only changed once per movement)
+    volatile int dir;                           // current direction of movement, used to keep track of position
+    volatile unsigned int totalStepsRequested;  // number of steps requested for current movement
+    volatile bool movementDone = false;         // true if the current movement has been completed (used by main program to wait for completion)
+    long stepPosition;                          // current position of stepper (total of all movements taken so far)
+
+    // per iteration variables (potentially changed every interrupt)
+    volatile unsigned int stepCountInMovement;  // number of steps completed in current movement
+
+    // Motor set-up (Member of variable length)
+    volatile int stepperPins[];                        // Int-Array with the Pins of the stepper:
+                                                //      NEMA17  :   {dir, step}
+                                                //      28BYJ   :   {pin1, pin2, pin3, pin4}
+};
+
+//****Functions****
+void oneStep(StepperType t, int dir, int stepperPins[]);
+void step28BYJ(int dir, int stepperPins[]);
+void stepNema17(int dir, int stepperPins[]);
+void resetStepperInfo(StepperInfo& si);
+void resetStepperMovement(volatile StepperInfo& si);
+void prepareMovement(int whichMotor, int angleRequested);
+void setNextInterruptInterval();
+int angle2Steps(int whichMotor, int motorAngle);
+int steps2Angle(int whichMotor, long motorSteps);
+void lcdPrintMotorAngle(int whichMotor);*/
+#pragma endregion
+
 
 #endif

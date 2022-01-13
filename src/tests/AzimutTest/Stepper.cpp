@@ -10,6 +10,7 @@ Stepper::Stepper(volatile int stepperPins[], float gearRatio, unsigned int id, S
     _stepsPerRevolution = stepsPerRevolution;
     _gearRatio = gearRatio;
     _motorId = id;
+    _stepPosition = 0;
 
     // Initialize Stepper-Pins:
     int numPins = 0;
@@ -144,7 +145,7 @@ void Stepper::prepareMovement(double angleRequested, ISR_Flags *flags) {
 
 // Prepare the next motor-movement of the selected motor for a given number of steps (reset info from previous movement, set new requested number of steps)
 void Stepper::prepareMovementSteps(unsigned long stepsRequested, int dir, ISR_Flags *flags) {
-    _dir = dir > 0 ? 1 : 0;
+    _dir = dir > 0 ? 0 : 1;
     _totalStepsRequested = abs(stepsRequested);
     resetStepperMovement();
     flags->remainingSteppersFlag |= (1 << _motorId); // "Add" motor to byte-flag
@@ -169,11 +170,12 @@ unsigned long Stepper::angle2Steps(double motorAngle) {
 }
 
 //Convert from motor-steps to degree
-double Stepper::steps2Angle( long motorSteps) {
+//double Stepper::steps2Angle(unsigned long motorSteps) {
+double Stepper::steps2Angle(long motorSteps) {
     double motorAngle = 0;
     double motorSteps_d = (double) motorSteps;
 
-    motorAngle = 360 * motorSteps_d/(_stepsPerRevolution * _gearRatio);
+    motorAngle =  360*motorSteps_d/ (_stepsPerRevolution * _gearRatio);
 
     return motorAngle;
 }

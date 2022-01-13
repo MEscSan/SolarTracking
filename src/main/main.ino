@@ -162,7 +162,8 @@ ISR(TIMER1_COMPA_vect) {
             //Serial.println(s.getStepCountInMovement());
             
             // Update total step-counter
-            unsigned long newStepPosition = s.getStepPosition();
+            //unsigned long newStepPosition = s.getStepPosition();
+            long newStepPosition = s.getStepPosition();
             newStepPosition += s.getDirection() == 0 ? 1 : -1;
             s.setStepPosition(newStepPosition);
 
@@ -242,7 +243,7 @@ void state0_TurnOn(){
 
         lcd.clear();
         lcd.setCursor(0, 0);
-        lcd.print("Turning On");
+        lcd.print("Einschalten");
         lcdPrintTime(lcd, rtc,1);
     }
 
@@ -287,7 +288,7 @@ void state2_InitNorth() {
       isNotOriented = true;
       programMillis = millis();
       lcd.setCursor(0, 0);
-      lcd.print("Spiegel nach Norden");
+      lcd.print("Nach Norden");
       dirX = -1;
       dirY = -1;
       
@@ -326,7 +327,7 @@ void state2_InitNorth() {
               dirX = -1;   // Stop motor
               dirY = -1;
               lcd.clear();
-              lcd.print("Stop  ");
+              lcd.print("Stopp  ");
               break;
           case IR_REMOTE_1:
                isNotOriented = false;
@@ -386,7 +387,7 @@ void state3_SolarTrack() {
         elevationSteps = 0;
         
         lcd.setCursor(0, 0);
-        lcd.print("Searching GPS");
+        lcd.print("GPS suchen");
         gps = L76X_Gat_GNRMC();
         Serial.print("\r\n");
         Serial.print("Time:");
@@ -441,7 +442,7 @@ void state3_SolarTrack() {
                 coords.Longitude = 13.41;
 
                 lcd.setCursor(0, 0);
-                lcd.print("GPS Error        ");
+                lcd.print("GPS Fehler       ");
                 lcd.setCursor(0, 1);
                 lcd.print("Default:Chemnitz");
 
@@ -450,9 +451,12 @@ void state3_SolarTrack() {
                 break;
             }
         }
-
-        //lcdPrintGPS(lcd, gps, 0);
-
+        if(gps.Status!= 0){
+          
+          lcdPrintGPS(lcd, gps, 0);
+          delay(5000);
+        }
+        
         // Assume tracker in start position
         trackerPosition.Azimuth = 0;
         trackerPosition.ElevationAngle = 0;
@@ -500,7 +504,7 @@ void state3_SolarTrack() {
       
         Serial.print("\nMotor Y");
         lcd.setCursor(0,1);
-        lcd.print("New elevation    ");
+        lcd.print("Hoehenwinkel neu");
         runAndWait();
   
         trackerPosition.ElevationAngle += dElevationAngle;
@@ -528,7 +532,7 @@ void state3_SolarTrack() {
             
         Serial.println("Motor X");
         lcd.setCursor(0,1);
-        lcd.print("New azimuth      ");
+        lcd.print("Azimut neu      ");
         runAndWait();
   
         Serial.print("\nStep-position x: ");
@@ -540,7 +544,9 @@ void state3_SolarTrack() {
 
         lcd.setCursor(0,1);
         lcd.print("A:");
-        lcd.print(steppers[0].getAngle(),2);
+        lcd.print(steppers[0].getAngle());
+        Serial.print("Azimut");
+        Serial.print(steppers[0].getAngle());
         lcd.print(" E:");
         lcd.print(trackerPosition.ElevationAngle);
         lcd.print("         ");
@@ -555,7 +561,7 @@ void state4_Return2Start() {
 
     lcd.clear();
     lcd.setCursor(0, 0);
-    lcd.print("Reseting...");
+    lcd.print("Zurueckfahren...");
 
     // Move motors only if mirror position was already changed
     if(azimuthSteps > 0){
@@ -568,7 +574,7 @@ void state4_Return2Start() {
       
       Serial.println("Motor X");
       lcd.setCursor(0,1);
-      lcd.print("New azimuth      ");
+      lcd.print("Azimut neu      ");
       runAndWait();
     }
 
@@ -585,7 +591,7 @@ void state4_Return2Start() {
     
     lcd.clear();
     lcd.setCursor(0, 0);
-    lcd.print("Reseting...");
+    lcd.print("Zurueckfahren...");
     //runAndWait();
 
     lcd.setCursor(0,1);

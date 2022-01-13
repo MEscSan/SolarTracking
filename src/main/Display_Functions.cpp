@@ -48,10 +48,10 @@ void lcdPrintTime(LiquidCrystal_I2C lcd, RTC_DS3231 rtc, int row){
 
 void lcdPrintSolarPosition(LiquidCrystal_I2C lcd, SolarPosition s, int row){
 	lcd.setCursor(0, row);
-	lcd.print("A");
+	lcd.print("A:");
 	lcd.print(s.Azimuth);
 	lcd.print(" ");
-	lcd.print("E");
+	lcd.print("E:");
 	lcd.print(s.ElevationAngle);
 	lcd.print(" ");
 }
