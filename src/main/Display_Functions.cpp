@@ -16,7 +16,7 @@ void lcdPrintGPS(LiquidCrystal_I2C lcd, GNRMC gps, int row){
 
   if(gps.Status != 1) {
     lcd.setCursor(0, row);
-    lcd.print("GPS unavaliable");
+    lcd.print("Nicht erreichbar");
   }
   else{
     lcd.setCursor(0, row);

@@ -121,7 +121,7 @@ void runAndWait() {
     timer1CompA_On();
 
     while (flags.remainingSteppersFlag) {
-        ledState = !ledState;
+       
     }
     
     flags.remainingSteppersFlag = 0;
@@ -164,7 +164,7 @@ ISR(TIMER1_COMPA_vect) {
             // Update total step-counter
             //unsigned long newStepPosition = s.getStepPosition();
             long newStepPosition = s.getStepPosition();
-            newStepPosition += s.getDirection() == 0 ? 1 : -1;
+            newStepPosition += s.getDirection() == 0 ? -1 : 1;
             s.setStepPosition(newStepPosition);
 
             if (s.getStepCountInMovement() >= stepsRequested) {
@@ -448,6 +448,10 @@ void state3_SolarTrack() {
 
                 // Wait for 5s
                 delay(5000);
+
+                // Display default coordinates
+                lcdPrintCoords(lcd, coords);
+                delay(5000);
                 break;
             }
         }
@@ -473,7 +477,26 @@ void state3_SolarTrack() {
     
     // Update Display only once a second
     if((programMillis - millis()) > 1000 || isFirstRun){
-      
+
+      if(sunPosition.ElevationAngle < 0 && isFirstRun){
+        programTime = rtc.now();
+        if(programTime.hour() <12){
+            lcd.clear();
+            lcd.setCursor(0,0);
+            lcd.print("Sonne noch nicht");
+            lcd.setCursor(0,1);
+            lcd.print("aufgegangen");
+        }
+        else{
+            lcd.clear();
+            lcd.setCursor(0,0);
+            lcd.print("Sonne bereits");
+            lcd.setCursor(0,1);
+            lcd.print("untergegangen");
+        }
+      }
+      delay(10000);
+            
       lcdPrintSolarPosition(lcd, sunPosition, 0);
       //lcdPrintCoords(lcd, coords, 1);
       programMillis = millis();
@@ -504,7 +527,9 @@ void state3_SolarTrack() {
       
         Serial.print("\nMotor Y");
         lcd.setCursor(0,1);
-        lcd.print("Hoehenwinkel neu");
+        lcd.print("ESteps ");
+        lcd.print(steppers[1].getTotalStepsRequested());
+        lcd.print("             ");
         runAndWait();
   
         trackerPosition.ElevationAngle += dElevationAngle;
@@ -515,45 +540,71 @@ void state3_SolarTrack() {
 
         //isVertical= false;
       }
-     
-      // azimuth  angle-difference between sun and tracker
-      double dAzimuth = sunPosition.Azimuth - trackerPosition.Azimuth;
-      Serial.print("\nAzimuth ");
-      Serial.print(sunPosition.Azimuth);
-      Serial.print(" -> dAzimuth : ");
-      Serial.print(dAzimuth);
+     }
+   ///Just for debugging purposes:"default Elevation 45°"
+     else
+     if(isFirstRun){
 
-      if(dAzimuth > 3|| isFirstRun){
-        // rotate x-Stepper
-        steppers[0].prepareMovement(dAzimuth, &flags);
-        Serial.print("-> Steps: ");
-        Serial.println(steppers[0].getTotalStepsRequested());
-        azimuthSteps += steppers[0].getTotalStepsRequested();
-            
-        Serial.println("Motor X");
         lcd.setCursor(0,1);
-        lcd.print("Azimut neu      ");
+        lcd.print("Default E 45                ");
+        delay(5000);
+        
+        double defaultElevation = SolarCalculator::elevationAngleChange2MotorAngle(0, 45);
+        steppers[1].prepareMovement(-defaultElevation, &flags);
+        steppers[1].prepareMovement(-defaultElevation, &flags); 
+        elevationSteps += steppers[1].getTotalStepsRequested(); 
+        
+        lcd.setCursor(0,1);
+        lcd.print("ESteps ");
+        lcd.print(steppers[1].getTotalStepsRequested());
+        lcd.print("             ");
         runAndWait();
   
-        Serial.print("\nStep-position x: ");
-        Serial.println(steppers[0].getStepPosition());
-      
-        // Update tracker-position
-        //trackerPosition.Azimuth += dAzimuth;
-        trackerPosition.Azimuth += steppers[0].getAngle();
+        trackerPosition.ElevationAngle += 45;
+   
+     }
+           
+    // azimuth  angle-difference between sun and tracker
+    double dAzimuth = sunPosition.Azimuth - trackerPosition.Azimuth;
+    Serial.print("\nAzimuth ");
+    Serial.print(sunPosition.Azimuth);
+    Serial.print(" -> dAzimuth : ");
+    Serial.print(dAzimuth);
 
-        lcd.setCursor(0,1);
-        lcd.print("A:");
-        lcd.print(steppers[0].getAngle());
-        Serial.print("Azimut");
-        Serial.print(steppers[0].getAngle());
-        lcd.print(" E:");
-        lcd.print(trackerPosition.ElevationAngle);
-        lcd.print("         ");
-      }
+    if(dAzimuth > 3|| isFirstRun){
+      // rotate x-Stepper
+      steppers[0].prepareMovement(dAzimuth, &flags);
+      Serial.print("-> Steps: ");
+      Serial.println(steppers[0].getTotalStepsRequested());
+      azimuthSteps += steppers[0].getTotalStepsRequested();
+          
+      Serial.println("Motor X");
+      // Show Azimuth-Steps on display
+      lcd.setCursor(0,1);
+      lcd.print("ASteps");
+      lcd.print(steppers[0].getTotalStepsRequested());
+      lcd.print("             ");
+      runAndWait();
+
+      Serial.print("\nStep-position x: ");
+      Serial.println(steppers[0].getStepPosition());
     
-      isInStartPosition = false;
+      // Update tracker-position
+      //trackerPosition.Azimuth += dAzimuth;
+      trackerPosition.Azimuth += steppers[0].getAngle();
+
+      lcd.setCursor(0,1);
+      lcd.print("A:");
+      lcd.print(steppers[0].getAngle());
+      Serial.print("Azimut");
+      Serial.print(steppers[0].getAngle());
+      lcd.print(" E:");
+      lcd.print(trackerPosition.ElevationAngle);
+      lcd.print("         ");
     }
+  
+    isInStartPosition = false;
+    
     programTime = rtc.now();
 };
 // State 4: move the tracker back to start position (Azimuth 0, elevation angle 0)
@@ -572,9 +623,12 @@ void state4_Return2Start() {
       // rotate x-Stepper
       steppers[0].prepareMovementSteps(azimuthSteps, -1, &flags);
       
-      Serial.println("Motor X");
+      Serial.println("\nMotor X");
+      // Show Azimuth-Steps on display
       lcd.setCursor(0,1);
-      lcd.print("Azimut neu      ");
+      lcd.print("ASteps");
+      lcd.print(steppers[0].getTotalStepsRequested());
+      lcd.print("             ");
       runAndWait();
     }
 
@@ -690,7 +744,7 @@ bool transitionS2S3() {
 // Change from state 3 to state 4 if button 0 is pressed
 bool transitionS3S4() {
     bool changeState = false;
-
+    /*
     // Change state automatically if the sun is already set/ not yet risen
     if(sunPosition.ElevationAngle < 0){
       programTime = rtc.now();
@@ -710,11 +764,9 @@ bool transitionS3S4() {
       }
       delay(5000);
       changeState = true;
-    }
-    
+    }*/
     //Serial.println("Transition 3->4");
     // Receive IR-remote signal
-    else
     if (irrecv.decode(&results)) { // Waiting for decoding
 
         if (results.value == IR_REMOTE_0) {
