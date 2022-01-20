@@ -471,8 +471,9 @@ void state3_SolarTrack() {
         L76X_Stop(); 
     }
 
-    DateTime now = rtc.now();
+    //DateTime now = rtc.now();
     
+    programTime = rtc.now();
     sunPosition = SolarCalculator::getSolarPosition(programTime, coords);
     
     // Update Display only once a second
@@ -518,7 +519,7 @@ void state3_SolarTrack() {
       Serial.print(" -> dElevationAngle (Motor) : ");
       Serial.print(dElevationAngleMotor);
   
-      if(dElevationAngle > 1 || isFirstRun){
+      if(abs(dElevationAngle) > 0.5 || isFirstRun){
         // rotate y-Stepper
         steppers[1].prepareMovement(-dElevationAngleMotor, &flags);
         Serial.print(" -> Steps: ");
@@ -571,36 +572,77 @@ void state3_SolarTrack() {
     Serial.print(" -> dAzimuth : ");
     Serial.print(dAzimuth);
 
-    if(dAzimuth > 3|| isFirstRun){
-      // rotate x-Stepper
-      steppers[0].prepareMovement(dAzimuth, &flags);
-      Serial.print("-> Steps: ");
-      Serial.println(steppers[0].getTotalStepsRequested());
-      azimuthSteps += steppers[0].getTotalStepsRequested();
-          
-      Serial.println("Motor X");
-      // Show Azimuth-Steps on display
-      lcd.setCursor(0,1);
-      lcd.print("ASteps");
-      lcd.print(steppers[0].getTotalStepsRequested());
-      lcd.print("             ");
-      runAndWait();
+    if(abs(dAzimuth) > 1|| isFirstRun){
 
-      Serial.print("\nStep-position x: ");
-      Serial.println(steppers[0].getStepPosition());
-    
-      // Update tracker-position
-      //trackerPosition.Azimuth += dAzimuth;
-      trackerPosition.Azimuth += steppers[0].getAngle();
+      // If the requested angle is over 180 deg -> take the shortest path (counterclockwise)
+      // Otherwise move rotate clockwise
+      if(abs(dAzimuth) <= 180){
+        
+        // rotate x-Stepper
+        steppers[0].prepareMovement(dAzimuth, &flags);
+        Serial.print("-> Steps: ");
+        Serial.println(steppers[0].getTotalStepsRequested());
+        azimuthSteps += steppers[0].getTotalStepsRequested();
+            
+        Serial.println("Motor X");
+        // Show Azimuth-Steps on display
+        lcd.setCursor(0,1);
+        lcd.print("ASteps");
+        lcd.print(steppers[0].getTotalStepsRequested());
+        lcd.print("             ");
+        runAndWait();
+  
+        Serial.print("\nStep-position x: ");
+        Serial.println(steppers[0].getStepPosition());
+      
+        // Update tracker-position
+        //trackerPosition.Azimuth += dAzimuth;
+        trackerPosition.Azimuth += steppers[0].getAngle();
+  
+        lcd.setCursor(0,1);
+        lcd.print("A:");
+        lcd.print(trackerPosition.Azimuth);
+        Serial.print("Azimut");
+        Serial.print(trackerPosition.Azimuth);
+        lcd.print(" E:");
+        lcd.print(trackerPosition.ElevationAngle);
+        lcd.print("         ");
+      }
+      else{
 
-      lcd.setCursor(0,1);
-      lcd.print("A:");
-      lcd.print(steppers[0].getAngle());
-      Serial.print("Azimut");
-      Serial.print(steppers[0].getAngle());
-      lcd.print(" E:");
-      lcd.print(trackerPosition.ElevationAngle);
-      lcd.print("         ");
+        double dAzim_ShortestPath = dAzimuth - 360;
+        
+        // rotate x-Stepper
+        steppers[0].prepareMovement(dAzim_ShortestPath, &flags);
+        Serial.print("-> Steps: ");
+        Serial.println(steppers[0].getTotalStepsRequested());
+        azimuthSteps += steppers[0].getTotalStepsRequested();
+            
+        Serial.println("Motor X");
+        // Show Azimuth-Steps on display
+        lcd.setCursor(0,1);
+        lcd.print("ASteps");
+        lcd.print(steppers[0].getTotalStepsRequested());
+        lcd.print("             ");
+        runAndWait();
+  
+        Serial.print("\nStep-position x: ");
+        Serial.println(steppers[0].getStepPosition());
+      
+        // Update tracker-position
+        //trackerPosition.Azimuth += dAzimuth;
+        trackerPosition.Azimuth += (360 - steppers[0].getAngle());
+
+        lcd.setCursor(0,1);
+        lcd.print("A:");
+        lcd.print(trackerPosition.Azimuth);
+        Serial.print("Azimut");
+        Serial.println(trackerPosition.Azimuth);
+        lcd.print(" E:");
+        lcd.print(trackerPosition.ElevationAngle);
+        lcd.print("         ");
+      }
+      
     }
   
     isInStartPosition = false;

@@ -107,7 +107,7 @@ double SolarCalculator::hourAngle(double currentLongitude, double eqTime, int cu
 }
 
 //  Solar height angle (elevationAngle) in degrees
-//  Sunrise and sunset => elevationAngle = 0Deg
+//  Sunrise and sunset => elevationAngle = 0�
 double SolarCalculator::elevationAnglePrecalculation(double currentLatitude, AstronomicalCoordinate a) {
   double elevationAnglePreCalc = 0;
   elevationAnglePreCalc = sin(PI / 180 * currentLatitude) * sin(PI / 180 * a.Decline) + cos(PI / 180 * currentLatitude) * cos(PI / 180 * a.Decline) * cos(PI / 180 * a.HourAngle);

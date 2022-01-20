@@ -204,7 +204,7 @@ long Stepper::getStepPosition() {
 }
 
 double Stepper::getAngle(){
- double stepperAngle = steps2Angle(_stepPosition);
+ double stepperAngle = steps2Angle(_stepCountInMovement);
  return stepperAngle;
 }
 
