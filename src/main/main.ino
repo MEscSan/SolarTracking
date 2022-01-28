@@ -75,14 +75,16 @@ int dirY = -1;
 int xStepperPins[2] = { DIR_X_PIN, STEP_X_PIN };
 int yStepperPins[2] = { DIR_Y_PIN, STEP_Y_PIN };
 bool ledState = true;  //LED-status variable
-bool isInStartPosition = false;
-bool isLeveled = false;
-//bool isRightTime = false;
-bool isReadyForLeveling = false;
-bool isNotOriented = true;
+bool isInStartPosition = false; // True when mirror is leveled and oriented
+bool isLeveled = false; // True when base is horizontal
+bool turnedCCW = false; // True when mirror turns counterclockwise; the mirror normally turns ClockWise (North-> East -> South -> West). Sometimes, if the path is shorter CounterClockWise, the mirror will turn in that direction
+                        // This has to be taken into account when counting the steps the motor already moved
+bool isReadyForLeveling = false; 
+bool isNotOriented = true; // True as long as mirror is not oriented (elevation 0 => mirror vertical; azimuth 0 => mirror looking to the norht) 
 unsigned long programMillis = 0;
 unsigned long programMicros = 0; 
-unsigned long azimuthSteps = 0;
+unsigned long azimuthStepsCW = 0; // Number of Steps in Azimuth-Direction when moving ClockWise (North-> East -> South -> West)
+unsigned long azimuthStepsCCW = 0;
 unsigned long elevationSteps = 0;
 DateTime programTime;
 SolarPosition sunPosition;
@@ -383,7 +385,8 @@ void state3_SolarTrack() {
         int gpsTimeout = 1;// minute
         programMillis = millis();
         isFirstRun = true;
-        azimuthSteps = 0;
+        azimuthStepsCW = 0;
+        azimuthStepsCCW = 0;
         elevationSteps = 0;
         
         lcd.setCursor(0, 0);
@@ -576,13 +579,14 @@ void state3_SolarTrack() {
 
       // If the requested angle is over 180 deg -> take the shortest path (counterclockwise)
       // Otherwise move rotate clockwise
+      // This has to be taken into account when ca
       if(abs(dAzimuth) <= 180){
         
         // rotate x-Stepper
         steppers[0].prepareMovement(dAzimuth, &flags);
         Serial.print("-> Steps: ");
         Serial.println(steppers[0].getTotalStepsRequested());
-        azimuthSteps += steppers[0].getTotalStepsRequested();
+        azimuthStepsCW += steppers[0].getTotalStepsRequested();
             
         Serial.println("Motor X");
         // Show Azimuth-Steps on display
@@ -616,7 +620,7 @@ void state3_SolarTrack() {
         steppers[0].prepareMovement(dAzim_ShortestPath, &flags);
         Serial.print("-> Steps: ");
         Serial.println(steppers[0].getTotalStepsRequested());
-        azimuthSteps += steppers[0].getTotalStepsRequested();
+        azimuthStepsCCW += steppers[0].getTotalStepsRequested();
             
         Serial.println("Motor X");
         // Show Azimuth-Steps on display
@@ -656,6 +660,17 @@ void state4_Return2Start() {
     lcd.setCursor(0, 0);
     lcd.print("Zurueckfahren...");
 
+    unsigned long azimuthSteps = 0;
+    int returnDir = -1; //1 => ClockWise; -1 => CounterClockWise
+    if(azimuthStepsCW > azimuthStepsCCW){
+       azimuthSteps = azimuthStepsCW - azimuthStepsCCW; 
+       returnDir = -1;
+    }
+    else{
+       azimuthSteps = azimuthStepsCCW - azimuthStepsCW;
+       returnDir = 1; 
+    }
+
     // Move motors only if mirror position was already changed
     if(azimuthSteps > 0){
         
@@ -663,7 +678,7 @@ void state4_Return2Start() {
       // azimuth  angle-difference between sun and tracker
       //double dAzimuth = 0 - trackerPosition.Azimuth;
       // rotate x-Stepper
-      steppers[0].prepareMovementSteps(azimuthSteps, -1, &flags);
+      steppers[0].prepareMovementSteps(azimuthSteps, returnDir, &flags);
       
       Serial.println("\nMotor X");
       // Show Azimuth-Steps on display
@@ -701,6 +716,8 @@ void state4_Return2Start() {
     trackerPosition.Azimuth = 0;
     trackerPosition.ElevationAngle = 0;
     azimuthSteps = 0;
+    azimuthStepsCW = 0;
+    azimuthStepsCCW = 0;
     elevationSteps = 0;
     
     isInStartPosition = true;
