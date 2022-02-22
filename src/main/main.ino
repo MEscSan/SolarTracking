@@ -545,7 +545,7 @@ void state3_SolarTrack() {
         //isVertical= false;
       }
      }
-   ///Just for debugging purposes:"default Elevation 45°"
+   /*//Just for debugging purposes:"default Elevation 45°"
      else
      if(isFirstRun){
 
@@ -566,7 +566,7 @@ void state3_SolarTrack() {
   
         trackerPosition.ElevationAngle += 45;
    
-     }
+     }*/
            
     // azimuth  angle-difference between sun and tracker
     double dAzimuth = sunPosition.Azimuth - trackerPosition.Azimuth;
